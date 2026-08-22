@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "825a768f-4ec5-4fdf-a6d1-8299bc183a77",
-  "prevId": "23bc56d8-9c81-4a17-b791-c4254d7af507",
+  "id": "97061a08-8875-406f-aad0-596c7082d250",
+  "prevId": "825a768f-4ec5-4fdf-a6d1-8299bc183a77",
   "tables": {
     "aiProposals": {
       "name": "aiProposals",
@@ -428,6 +428,83 @@
       "compositePrimaryKeys": {
         "projectBriefs_id": {
           "name": "projectBriefs_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "projectIdeas": {
+      "name": "projectIdeas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "projectId": {
+          "name": "projectId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "inputText": {
+          "name": "inputText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "project_ideas_project_idx": {
+          "name": "project_ideas_project_idx",
+          "columns": [
+            "projectId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "projectIdeas_projectId_projects_id_fk": {
+          "name": "projectIdeas_projectId_projects_id_fk",
+          "tableFrom": "projectIdeas",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "projectId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "projectIdeas_id": {
+          "name": "projectIdeas_id",
           "columns": [
             "id"
           ]

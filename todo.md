@@ -91,13 +91,24 @@
 
 ## Текущий этап: IDEA → Brief → SiteSpec → Build Core
 
-- [ ] Создать AIProvider abstraction с manual fallback без Manus-specific бизнес-логики
-- [ ] Сохранить IDEA как исходный пользовательский ввод отдельно от Brief
-- [ ] Добавить создание/редактирование и явное подтверждение Brief
-- [ ] Добавить строгую canonical SiteSpec Zod-schema и validation flow
-- [ ] Реализовать proposal/validation/apply без прямой записи AI в production data
-- [ ] Реализовать ownership и expectedRevision guards для Stage 3
-- [ ] Реализовать детерминированный транзакционный Build из approved SiteSpec
-- [ ] Создавать только Page → Section → Text/Image/Button и project-level theme
-- [ ] Добавить persistence, stale SiteSpec/Proposal CONFLICT и manual fallback tests
-- [ ] Запустить pnpm check, pnpm test и pnpm build; остановиться при FAIL
+- [x] Создать AIProvider abstraction с manual fallback без Manus-specific бизнес-логики
+- [x] Сохранить IDEA как исходный пользовательский ввод отдельно от Brief
+- [x] Добавить создание/редактирование и явное подтверждение Brief
+- [x] Добавить строгую canonical SiteSpec Zod-schema и validation flow
+- [x] Реализовать proposal/validation/apply без прямой записи AI в production data
+- [x] Реализовать ownership и expectedRevision guards для Stage 3
+- [x] Реализовать детерминированный транзакционный Build из approved SiteSpec
+- [x] Создавать только Page → Section → Text/Image/Button и project-level theme
+- [x] Добавить persistence, stale SiteSpec/Proposal CONFLICT и manual fallback tests
+- [ ] Запустить pnpm check, pnpm test и pnpm build; FAIL на production build (exit 143, sandbox OOM)
+
+## Stage 3 acceptance gap closure
+
+- [ ] Создать executable full DB integration test через production router/handlers
+- [ ] Проверить reload persistence IDEA, Brief, SiteSpec, theme, pages, blocks и revision через architect.state/read paths
+- [ ] Добавить реальные stale expectedRevision и atomicity regression tests
+- [ ] Добавить Brief-changed-after-SiteSpec conflict test
+- [ ] Добавить repeated Apply conflict/no-duplication test
+- [ ] Добавить cross-owner rejection/no-state-change test
+- [ ] Запустить pnpm check, pnpm test, затем обычный pnpm build
+- [ ] Если build снова FAIL, определить resource pressure vs Stage 3 dependency issue без случайного изменения архитектуры

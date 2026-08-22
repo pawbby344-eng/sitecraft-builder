@@ -43,6 +43,16 @@ export const projects = mysqlTable("projects", {
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = typeof projects.$inferInsert;
 
+export const projectIdeas = mysqlTable("projectIdeas", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  inputText: text("inputText").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  projectIdx: index("project_ideas_project_idx").on(table.projectId),
+}));
+
 export const projectBriefs = mysqlTable("projectBriefs", {
   id: int("id").autoincrement().primaryKey(),
   projectId: int("projectId").notNull().references(() => projects.id, { onDelete: "cascade" }),
@@ -135,6 +145,7 @@ export const scopeLocks = mysqlTable("scopeLocks", {
   projectScopeIdx: index("scope_locks_project_scope_idx").on(table.projectId, table.scopeType, table.scopeId),
 }));
 
+export type ProjectIdea = typeof projectIdeas.$inferSelect;
 export type ProjectBrief = typeof projectBriefs.$inferSelect;
 export type SiteSpec = typeof siteSpecs.$inferSelect;
 export type Page = typeof pages.$inferSelect;

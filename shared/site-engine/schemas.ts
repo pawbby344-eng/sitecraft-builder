@@ -60,6 +60,7 @@ export const imagePropsSchema = z.object({
 
 const safeHref = z.string().refine((value) => {
   if (value.startsWith("/")) return !value.startsWith("//");
+  if (value.startsWith("#")) return /^#[a-zA-Z0-9_-]+$/.test(value);
   try {
     const url = new URL(value);
     return ["http:", "https:", "mailto:", "tel:"].includes(url.protocol);
