@@ -100,15 +100,15 @@
 - [x] Реализовать детерминированный транзакционный Build из approved SiteSpec
 - [x] Создавать только Page → Section → Text/Image/Button и project-level theme
 - [x] Добавить persistence, stale SiteSpec/Proposal CONFLICT и manual fallback tests
-- [ ] Запустить pnpm check, pnpm test и pnpm build; FAIL на production build (exit 143, sandbox OOM)
+- [x] Запустить pnpm check, pnpm test и pnpm build; первый build был остановлен ресурсами, повторный clean build завершился PASS
 
 ## Stage 3 acceptance gap closure
 
-- [ ] Создать executable full DB integration test через production router/handlers
-- [ ] Проверить reload persistence IDEA, Brief, SiteSpec, theme, pages, blocks и revision через architect.state/read paths
-- [ ] Добавить реальные stale expectedRevision и atomicity regression tests
-- [ ] Добавить Brief-changed-after-SiteSpec conflict test
-- [ ] Добавить repeated Apply conflict/no-duplication test
-- [ ] Добавить cross-owner rejection/no-state-change test
-- [ ] Запустить pnpm check, pnpm test, затем обычный pnpm build
-- [ ] Если build снова FAIL, определить resource pressure vs Stage 3 dependency issue без случайного изменения архитектуры
+- [x] Создать executable full DB integration test через production router/handlers
+- [x] Проверить reload persistence IDEA, Brief, SiteSpec, theme, pages, blocks и revision через architect.state/read paths
+- [x] Добавить реальные stale expectedRevision и atomicity regression tests
+- [x] Добавить Brief-changed-after-SiteSpec conflict test
+- [x] Добавить repeated Apply conflict/no-duplication test
+- [x] Добавить cross-owner rejection/no-state-change test
+- [x] Запустить pnpm check, pnpm test, затем обычный pnpm build
+- [x] Если build снова FAIL, определить resource pressure vs Stage 3 dependency issue без случайного изменения архитектуры; повторный build прошёл, архитектура не менялась

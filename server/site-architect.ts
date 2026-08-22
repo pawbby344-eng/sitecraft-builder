@@ -185,8 +185,9 @@ export function validateSiteSpecForBuild(input: unknown): SiteSpec {
 async function buildFromSpec(tx: any, project: OwnerProject, spec: SiteSpec, expectedRevision: number) {
   spec = validateSiteSpecForBuild(spec);
   const currentBrief = await tx.select().from(projectBriefs).where(eq(projectBriefs.projectId, project.id)).orderBy(desc(projectBriefs.updatedAt)).limit(1);
-  if (!currentBrief[0] || currentBrief[0].status !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirmed Brief is required" });
+  if (!currentBrief[0]) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirmed Brief is required" });
   if (fingerprint(briefSchema.parse(currentBrief[0].brief)) !== spec.sourceBriefFingerprint) throw new TRPCError({ code: "CONFLICT", message: "SiteSpec source Brief is stale" });
+  if (currentBrief[0].status !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirmed Brief is required" });
   if (project.projectSlug !== spec.projectSlug) throw new TRPCError({ code: "BAD_REQUEST", message: "SiteSpec projectSlug cannot change during Build" });
   themeSchema.parse(spec.theme);
 
@@ -236,9 +237,13 @@ export async function applySiteSpec(ownerId: number, input: { projectId: number;
 }
 
 export async function getArchitectState(ownerId: number, projectId: number) {
-  const idea = await latestIdea(projectId, ownerId);
-  const brief = await latestBrief(projectId, ownerId).catch(() => null);
-  const spec = await latestSpec(projectId, ownerId).catch(() => null);
-  const project = await ownerProject(projectId, ownerId);
-  return { project, idea, brief, spec };
+  const db = await dbRequired();
+  const project = await ownerProject(projectId, ownerId, db);
+  const idea = await latestIdea(projectId, ownerId, db);
+  const brief = await latestBrief(projectId, ownerId, db).catch(() => null);
+  const spec = await latestSpec(projectId, ownerId, db).catch(() => null);
+  const projectPages = await db.select().from(pages).where(eq(pages.projectId, projectId));
+  const pageIds = projectPages.map((page) => page.id);
+  const blocks = pageIds.length ? await db.select().from(pageBlocks).where(inArray(pageBlocks.pageId, pageIds)) : [];
+  return { project, idea, brief, spec, pages: projectPages, blocks };
 }
