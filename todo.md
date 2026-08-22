@@ -1,0 +1,90 @@
+# SiteCraft MVP TODO
+
+## Core Engine
+
+- [ ] Использовать иерархию Page → Section → Content Blocks максимум в два уровня
+- [ ] Хранить pageId, parentBlockId, type, sortOrder и строго валидируемые props
+- [ ] Разделить Draft и immutable Published Revision/Snapshot
+- [ ] Использовать единый canonical projectDraftRevision для optimistic concurrency
+- [ ] Передавать expectedRevision в каждую Draft mutation и возвращать CONFLICT при устаревшем сохранении
+- [ ] Добавить project-level Theme / Design Tokens
+- [ ] Сделать projectSlug глобально уникальным с момента создания проекта
+- [ ] Сделать pageSlug уникальным внутри проекта
+- [ ] Добавить schemaVersion в publishedRevisions
+- [ ] Выполнять reorder, replaceAll, template build и Publish транзакционно
+- [ ] Проверять ownership каждого projectId, pageId и blockId на сервере
+
+## AI Site Generation
+
+- [ ] Добавить IDEA → структурированный Brief без немедленного создания страницы
+- [ ] Дать пользователю просмотреть и отредактировать Brief до генерации
+- [ ] Добавить строгий SiteSpec как промежуточный результат AI-проектирования
+- [ ] Валидировать SiteSpec через строгую Zod-схему
+- [ ] Преобразовывать только подтверждённый SiteSpec в Project Draft детерминированным трансформером
+- [ ] Не генерировать произвольный React-код для сайтов в MVP
+- [ ] Связать AI Site Architect с sitemap, pages, sections, block types, CTA, content intent и theme tokens
+- [ ] Добавить AIProvider с generateBrief, generateSiteSpec и proposeEdit
+- [ ] Изолировать provider-specific код от pages/editor/publish architecture
+
+## Visual Editor и AI Local Edit
+
+- [ ] Собрать редактор с иерархическим canvas и блоками Section/Text/Image/Button
+- [ ] Добавить desktop/tablet/mobile Preview Draft
+- [ ] Добавить локальный AI Proposal flow: selected scope → proposal → validation → diff/preview → Apply
+- [ ] Запретить AI напрямую менять Draft без подтверждения Proposal
+- [ ] Добавить block lock, section lock и theme lock без сложной permission-системы
+- [ ] Создавать новую Draft revision после применения Proposal
+- [ ] Добавить undo последнего применённого AI-изменения
+
+## Auth, Publish и QA
+
+- [ ] Оставить Manus OAuth для текущей среды через Auth Adapter
+- [ ] Не связывать feature handlers с Manus-specific API и использовать ownerId abstraction
+- [ ] Реализовать Save отдельно от Publish
+- [ ] Создать immutable Published Revision с schemaVersion
+- [ ] Реализовать public routes /site/:projectSlug и /site/:projectSlug/:pageSlug
+- [ ] Проверить, что public renderer читает только опубликованный snapshot
+- [ ] Добавить unit, integration и E2E тесты для Core Engine и AI Proposal flow
+- [ ] Запустить TypeScript check, tests и production build
+
+## Сознательно отложено
+
+- [ ] Не добавлять произвольную генерацию React-кода
+- [ ] Не добавлять collaborative editing и CRDT
+- [ ] Не добавлять multi-agent orchestration
+- [ ] Не добавлять сложное branching/version-history UI
+- [ ] Не добавлять marketplace компонентов
+- [ ] Не добавлять custom domains
+- [ ] Не добавлять десятки AI providers
+- [ ] Не добавлять autonomous publishing
+- [ ] Не добавлять новые block types сверх MVP
+
+## Текущий этап: Foundation и схема данных
+
+- [x] Добавить таблицы projectBriefs, siteSpecs, projects, pages, pageBlocks, publishedRevisions, aiProposals и scopeLocks
+- [x] Добавить nullable parentBlockId и ограничения двухуровневой иерархии на уровне модели/проверок
+- [x] Добавить projectDraftRevision, publishedRevisionId, schemaVersion и project-level theme
+- [x] Добавить ownership foreign keys и уникальность projectSlug/pageSlug
+- [x] Сгенерировать миграцию Drizzle
+- [x] Проверить миграционный SQL и применить его через database migration workflow
+- [x] Запустить TypeScript check и тесты этапа 1 (проверка выявила незакрытый gap по иерархии)
+
+## Исправление hierarchy gap в этапе 1
+
+- [x] Проверить фактическую версию подключённой MySQL/TiDB и поддержку self-referencing foreign key
+- [x] Создать additive migration 0002 с parentBlockId integrity и индексом
+- [x] Проверить и применить migration 0002 без изменения 0001
+- [x] Создать общий deterministic hierarchy validator без зависимости от UI/AI
+- [x] Добавить нормализацию sortOrder внутри parent scope
+- [x] Добавить regression tests для valid и invalid tree cases
+- [x] Повторно выполнить pnpm check, pnpm test и production build
+
+## Текущий этап: Core Engine invariants и серверный доступ
+
+- [x] Добавить строгие block/theme/slug schemas для серверных mutations
+- [x] Добавить ownership helpers для projectId, pageId и blockId
+- [x] Добавить canonical projectDraftRevision guard и CONFLICT errors
+- [x] Подключить hierarchy validator ко всем create/update/reorder/replaceAll handlers
+- [x] Реализовать транзакционные reorder и replaceAll с детерминированным sortOrder
+- [x] Добавить server-side tests для ownership, revision guard и handler hierarchy validation
+- [x] Запустить pnpm check и pnpm test; остановиться при FAIL
