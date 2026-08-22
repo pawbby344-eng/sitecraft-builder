@@ -88,3 +88,16 @@
 - [x] Реализовать транзакционные reorder и replaceAll с детерминированным sortOrder
 - [x] Добавить server-side tests для ownership, revision guard и handler hierarchy validation
 - [x] Запустить pnpm check и pnpm test; остановиться при FAIL
+
+## Текущий этап: IDEA → Brief → SiteSpec → Build Core
+
+- [ ] Создать AIProvider abstraction с manual fallback без Manus-specific бизнес-логики
+- [ ] Сохранить IDEA как исходный пользовательский ввод отдельно от Brief
+- [ ] Добавить создание/редактирование и явное подтверждение Brief
+- [ ] Добавить строгую canonical SiteSpec Zod-schema и validation flow
+- [ ] Реализовать proposal/validation/apply без прямой записи AI в production data
+- [ ] Реализовать ownership и expectedRevision guards для Stage 3
+- [ ] Реализовать детерминированный транзакционный Build из approved SiteSpec
+- [ ] Создавать только Page → Section → Text/Image/Button и project-level theme
+- [ ] Добавить persistence, stale SiteSpec/Proposal CONFLICT и manual fallback tests
+- [ ] Запустить pnpm check, pnpm test и pnpm build; остановиться при FAIL
