@@ -112,3 +112,26 @@
 - [x] Добавить cross-owner rejection/no-state-change test
 - [x] Запустить pnpm check, pnpm test, затем обычный pnpm build
 - [x] Если build снова FAIL, определить resource pressure vs Stage 3 dependency issue без случайного изменения архитектуры; повторный build прошёл, архитектура не менялась
+
+## Recovery Freeze after Stage 3
+
+- [x] Составить инвентарь исходников, зависимостей, миграций и Manus-specific hooks
+- [x] Создать внешний source bundle с полным кодом, package.json и lockfile
+- [x] Создать .env.example без секретов со всеми обязательными переменными
+- [x] Собрать все static/assets bytes и manifest
+- [ ] Создать полный logical DB backup с данными проекта — текущий snapshot содержит 0 проектных строк, gap не закрыт
+- [ ] Проверить целостность backup и соответствие схеме/данным — checksum/DDL проверены, соответствие непустым project data не подтверждено
+- [x] Подготовить инструкцию внешнего запуска install → DB → migrations → env → check → test → build/start
+- [x] Проверить восстановление в изолированной копии по pnpm install → migrations → pnpm check → pnpm test → pnpm build (clean-room PASS; external deployment unverified)
+- [x] Составить Recovery Freeze таблицу и явно указать реальные блокеры
+
+## Recovery verification: Safe vs Runtime Ready
+
+- [x] Снять row counts source DB для всех Stage 3 таблиц
+- [x] Сверить source row counts с INSERT counts logical backup и получить MATCH по каждой таблице
+- [x] Создать отдельную пустую test database/schema для recovery (локальная MariaDB; framework users baseline требуется до additive migration 0001)
+- [x] Применить migrations 0001 → 0002 → 0003 на свежей схеме
+- [x] Запустить Stage 3 smoke flow на свежей схеме с reload
+- [x] Запустить на recovery setup pnpm check, pnpm test и pnpm build
+- [x] Подтвердить физический путь, размер, SHA-256 и состав recovery archive
+- [x] Отдельно вынести RECOVERY SAFE и EXTERNAL RUNTIME READY без подмены критериев

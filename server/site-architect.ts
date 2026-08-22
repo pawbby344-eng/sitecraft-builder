@@ -32,6 +32,15 @@ function requireText(value: string, field: string) {
   return normalized;
 }
 
+function parseJsonColumn(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableValue);
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => [key, stableValue(item)]));
@@ -48,7 +57,7 @@ async function ownerProject(projectId: number, ownerId: number, tx?: any): Promi
     .from(projects).where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId))).limit(1);
   const project = rows[0];
   if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
-  return project;
+  return { ...project, theme: parseJsonColumn(project.theme) };
 }
 
 async function latestIdea(projectId: number, ownerId: number, tx?: any) {
@@ -64,7 +73,7 @@ async function latestBrief(projectId: number, ownerId: number, tx?: any) {
   await ownerProject(projectId, ownerId, db);
   const rows = await db.select().from(projectBriefs).where(eq(projectBriefs.projectId, projectId)).orderBy(desc(projectBriefs.updatedAt)).limit(1);
   if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Brief not found" });
-  return rows[0];
+  return { ...rows[0], brief: parseJsonColumn(rows[0].brief) };
 }
 
 async function latestSpec(projectId: number, ownerId: number, tx?: any) {
@@ -72,7 +81,7 @@ async function latestSpec(projectId: number, ownerId: number, tx?: any) {
   await ownerProject(projectId, ownerId, db);
   const rows = await db.select().from(siteSpecs).where(eq(siteSpecs.projectId, projectId)).orderBy(desc(siteSpecs.updatedAt)).limit(1);
   if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "SiteSpec not found" });
-  return rows[0];
+  return { ...rows[0], spec: parseJsonColumn(rows[0].spec) };
 }
 
 export async function createProject(ownerId: number, input: { name: string; projectSlug: string; idea: string }) {
@@ -129,7 +138,7 @@ export async function confirmBrief(ownerId: number, input: { projectId: number; 
   await ownerProject(input.projectId, ownerId, db);
   const row = await db.select().from(projectBriefs).where(and(eq(projectBriefs.id, input.briefId), eq(projectBriefs.projectId, input.projectId))).limit(1);
   if (!row[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Brief not found" });
-  const validated = briefSchema.parse(row[0].brief);
+  const validated = briefSchema.parse(parseJsonColumn(row[0].brief));
   await db.update(projectBriefs).set({ brief: validated, status: "confirmed" }).where(eq(projectBriefs.id, input.briefId));
   return { briefId: input.briefId, status: "confirmed" as const, fingerprint: fingerprint(validated) };
 }
@@ -142,7 +151,7 @@ export async function generateSiteSpec(ownerId: number, input: { projectId: numb
   const brief = briefRow[0];
   if (!brief) throw new TRPCError({ code: "NOT_FOUND", message: "Brief not found" });
   if (brief.status !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Brief must be confirmed before SiteSpec" });
-  const validatedBrief = briefSchema.parse(brief.brief);
+  const validatedBrief = briefSchema.parse(parseJsonColumn(brief.brief));
   const spec = await getAIProvider().generateSiteSpec({ idea: idea.inputText, brief: validatedBrief, projectName: project.name, projectSlug: project.projectSlug, sourceBriefFingerprint: fingerprint(validatedBrief) });
   const validatedSpec = siteSpecSchema.parse(spec);
   const inserted = await db.insert(siteSpecs).values({ projectId: input.projectId, briefId: input.briefId, spec: validatedSpec, schemaVersion: "1", status: "draft" });
@@ -154,7 +163,7 @@ export async function confirmSiteSpec(ownerId: number, input: { projectId: numbe
   await ownerProject(input.projectId, ownerId, db);
   const rows = await db.select().from(siteSpecs).where(and(eq(siteSpecs.id, input.siteSpecId), eq(siteSpecs.projectId, input.projectId))).limit(1);
   if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "SiteSpec not found" });
-  const spec = siteSpecSchema.parse(rows[0].spec);
+  const spec = siteSpecSchema.parse(parseJsonColumn(rows[0].spec));
   const brief = await latestBrief(input.projectId, ownerId, db);
   if (fingerprint(briefSchema.parse(brief.brief)) !== spec.sourceBriefFingerprint) throw new TRPCError({ code: "CONFLICT", message: "SiteSpec source Brief is stale" });
   await db.update(siteSpecs).set({ spec, status: "confirmed" }).where(eq(siteSpecs.id, input.siteSpecId));
@@ -186,7 +195,7 @@ async function buildFromSpec(tx: any, project: OwnerProject, spec: SiteSpec, exp
   spec = validateSiteSpecForBuild(spec);
   const currentBrief = await tx.select().from(projectBriefs).where(eq(projectBriefs.projectId, project.id)).orderBy(desc(projectBriefs.updatedAt)).limit(1);
   if (!currentBrief[0]) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirmed Brief is required" });
-  if (fingerprint(briefSchema.parse(currentBrief[0].brief)) !== spec.sourceBriefFingerprint) throw new TRPCError({ code: "CONFLICT", message: "SiteSpec source Brief is stale" });
+  if (fingerprint(briefSchema.parse(parseJsonColumn(currentBrief[0].brief))) !== spec.sourceBriefFingerprint) throw new TRPCError({ code: "CONFLICT", message: "SiteSpec source Brief is stale" });
   if (currentBrief[0].status !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirmed Brief is required" });
   if (project.projectSlug !== spec.projectSlug) throw new TRPCError({ code: "BAD_REQUEST", message: "SiteSpec projectSlug cannot change during Build" });
   themeSchema.parse(spec.theme);
@@ -230,7 +239,7 @@ export async function applySiteSpec(ownerId: number, input: { projectId: number;
     const stored = rows[0];
     if (!stored) throw new TRPCError({ code: "NOT_FOUND", message: "SiteSpec not found" });
     if (stored.status !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "SiteSpec must be confirmed before Apply" });
-    const spec = siteSpecSchema.parse(stored.spec);
+    const spec = siteSpecSchema.parse(parseJsonColumn(stored.spec));
     const result = await buildFromSpec(tx, project, spec, input.expectedRevision);
     return { siteSpecId: input.siteSpecId, applied: true as const, ...result };
   });
@@ -245,5 +254,5 @@ export async function getArchitectState(ownerId: number, projectId: number) {
   const projectPages = await db.select().from(pages).where(eq(pages.projectId, projectId));
   const pageIds = projectPages.map((page) => page.id);
   const blocks = pageIds.length ? await db.select().from(pageBlocks).where(inArray(pageBlocks.pageId, pageIds)) : [];
-  return { project, idea, brief, spec, pages: projectPages, blocks };
+  return { project: { ...project, theme: parseJsonColumn(project.theme) }, idea, brief: brief ? { ...brief, brief: parseJsonColumn(brief.brief) } : null, spec: spec ? { ...spec, spec: parseJsonColumn(spec.spec) } : null, pages: projectPages, blocks };
 }
