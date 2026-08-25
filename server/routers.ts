@@ -6,6 +6,7 @@ import { blockMutationSchema, blockUpdateSchema, reorderSchema, replaceAllSchema
 import { applySiteSpecSchema, briefIdSchema, createProjectStage3Schema, projectOnlySchema, saveIdeaSchema, siteSpecIdSchema, updateBriefSchema } from "../shared/site-engine/architect";
 import { createBlock, replaceAllBlocks, reorderBlocks, updateBlock } from "./site-engine";
 import { applySiteSpec, confirmBrief, confirmSiteSpec, createBrief, createProject, generateSiteSpec, getArchitectState, saveIdea, updateBrief } from "./site-architect";
+import { listWorkspaceProjects } from "./workspace";
 
 export const appRouter = router({
   system: systemRouter,
@@ -16,6 +17,10 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+
+  workspace: router({
+    projects: protectedProcedure.query(({ ctx }) => listWorkspaceProjects(ctx.user.id)),
   }),
 
   siteBlocks: router({

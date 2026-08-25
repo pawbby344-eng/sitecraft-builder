@@ -135,3 +135,26 @@
 - [x] Запустить на recovery setup pnpm check, pnpm test и pnpm build
 - [x] Подтвердить физический путь, размер, SHA-256 и состав recovery archive
 - [x] Отдельно вынести RECOVERY SAFE и EXTERNAL RUNTIME READY без подмены критериев
+
+## Текущий этап: Workspace + Visual Editor
+
+- [x] Добавить защищённые workspace/project/page read-paths без изменения Stage 1–3 flow
+- [x] Собрать workspace shell с приватным owner-scoped project list
+- [x] Добавить выбор проекта и страниц с отображением draft revision
+- [x] Собрать иерархический canvas Section → Text/Image/Button
+- [x] Добавить selection state и properties panel для редактирования разрешённых props (включены все strict-schema fields)
+- [x] Подключить Save к существующим update/reorder/replaceAll handlers с expectedRevision (granular update/reorder и replaceAll fallback)
+- [x] Показать loading, empty, error, dirty и conflict states
+- [x] Не добавлять AI Local Edit, Locks UI, Preview/Publish и новые block types
+- [x] Добавить Stage 4 acceptance tests (real router/DB read, save, reload и stale conflict)
+- [ ] Запустить pnpm check, pnpm test и pnpm build; FAIL на production build: процесс завершён exit 143 во время rendering chunks при memory pressure sandbox
+
+## Stage 4 production build gate recovery
+
+- [ ] Сохранить WIP checkpoint текущего Stage 4 без изменения функциональности
+- [ ] Остановить dev server/watch и тяжёлые Vitest/Vite процессы перед build
+- [ ] Удалить только dist и зафиксировать доступную память до build
+- [ ] Проверить только новые Stage 4 imports и accidental bundle growth
+- [ ] Выполнить обычный pnpm build без специальных production-флагов
+- [ ] При повторном exit 143 зафиксировать последнюю строку, exit code, память, процессы и этап Vite
+- [ ] Повторно подтвердить pnpm check, pnpm test и Stage 4 integration acceptance

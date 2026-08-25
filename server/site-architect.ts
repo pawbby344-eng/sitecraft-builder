@@ -254,5 +254,12 @@ export async function getArchitectState(ownerId: number, projectId: number) {
   const projectPages = await db.select().from(pages).where(eq(pages.projectId, projectId));
   const pageIds = projectPages.map((page) => page.id);
   const blocks = pageIds.length ? await db.select().from(pageBlocks).where(inArray(pageBlocks.pageId, pageIds)) : [];
-  return { project: { ...project, theme: parseJsonColumn(project.theme) }, idea, brief: brief ? { ...brief, brief: parseJsonColumn(brief.brief) } : null, spec: spec ? { ...spec, spec: parseJsonColumn(spec.spec) } : null, pages: projectPages, blocks };
+  return {
+    project: { ...project, theme: parseJsonColumn(project.theme) },
+    idea,
+    brief: brief ? { ...brief, brief: parseJsonColumn(brief.brief) } : null,
+    spec: spec ? { ...spec, spec: parseJsonColumn(spec.spec) } : null,
+    pages: projectPages,
+    blocks: blocks.map((block) => ({ id: block.id, pageId: block.pageId, parentBlockId: block.parentBlockId, type: block.type, sortOrder: block.sortOrder, props: parseJsonColumn(block.props) })),
+  };
 }
