@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
+import { getSafeErrorMessage } from "@shared/safe-error";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { Component, ReactNode } from "react";
+import React, { Component, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -34,9 +35,9 @@ class ErrorBoundary extends Component<Props, State> {
             <h2 className="text-xl mb-4">An unexpected error occurred.</h2>
 
             <div className="p-4 w-full rounded bg-muted overflow-auto mb-6">
-              <pre className="text-sm text-muted-foreground whitespace-break-spaces">
-                {this.state.error?.stack}
-              </pre>
+              <p role="alert" className="text-sm text-muted-foreground whitespace-break-spaces">
+                {getSafeErrorMessage(this.state.error)}
+              </p>
             </div>
 
             <button

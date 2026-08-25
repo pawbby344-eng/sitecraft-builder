@@ -341,3 +341,12 @@
 - [x] Выполнить PRA-015 Release Readiness Review
 - [x] Выполнить PRA-016 Design Patterns Review
 - [x] Собрать PRA-017 Final Production Report без повторного анализа исходного кода
+
+## PRA-017 finding closure — safe errors and request correlation
+
+- [x] Убрать stack trace и internal exception details из production ErrorBoundary UI
+- [x] Добавить regression test на безопасное ErrorBoundary сообщение
+- [x] Добавить requestId в server request context с безопасной генерацией/пробросом
+- [x] Добавить structured error logging для critical server errors/mutations без secrets и raw user content
+- [x] Добавить regression tests на request correlation и redacted structured error fields
+- [x] Выполнить pnpm check, pnpm test, pnpm test:e2e и pnpm build; остановиться после PASS

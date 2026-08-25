@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { getProjectIdForLog, logStructuredServerError, requestContextMiddleware } from "./request-context";
 import { registerPublicRoutes } from "../public";
 import { serveStatic, setupVite } from "./vite";
 
@@ -35,6 +36,7 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(requestContextMiddleware);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerPublicRoutes(app);
@@ -44,6 +46,16 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError: ({ path, error, ctx, input, req }) => {
+        logStructuredServerError({
+          requestId: ctx?.requestId ?? req.requestId ?? "missing-request-id",
+          route: path ?? "unknown-procedure",
+          projectId: getProjectIdForLog(input),
+          userId: ctx?.user?.id,
+          errorType: error.name || error.code,
+          error,
+        });
+      },
     })
   );
   // development mode uses Vite, production mode uses static files

@@ -5,6 +5,7 @@ import { sdk } from "./sdk";
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
+  requestId: string;
   user: User | null;
 };
 
@@ -23,6 +24,7 @@ export async function createContext(
   return {
     req: opts.req,
     res: opts.res,
+    requestId: opts.req.requestId ?? "missing-request-id",
     user,
   };
 }
