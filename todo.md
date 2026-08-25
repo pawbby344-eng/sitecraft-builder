@@ -206,32 +206,42 @@
 
 ## Stage 7 Final QA / Release Gate
 
-- [ ] Выполнить полный production-path E2E flow от auth до Unpublish/404
-- [ ] Проверить новую authenticated session и persistence/reload всех состояний
+- [x] Выполнить полный production-path E2E flow от auth до Unpublish/404 — PASS
+- [x] Проверить новую authenticated session и persistence/reload всех состояний — PASS
 - [x] Повторно проверить ownership, conflicts, locks, strict validation и atomicity — PASS по полному Vitest suite
 - [x] Проверить Draft/public isolation, immutable revisions и schemaVersion guard — PASS
 - [x] Проверить Draft Preview и Published renderer parity — exact HTML parity PASS
-- [ ] Выполнить desktop/mobile UI QA и browser console/overflow checks
+- [x] Выполнить desktop/mobile UI QA и browser console/overflow checks — PASS; blocking console/network errors не обнаружены
 - [x] Проверить migrations на чистой test DB и smoke flow, если среда позволяет — UNVERIFIED: отдельная DB environment сейчас отсутствует; предыдущая Stage 3 clean-room verification сохранена
 - [x] Запустить pnpm check, pnpm test и pnpm build — PASS после retry
 - [x] Обновить recovery package финальным состоянием Stage 7 QA evidence и blocker status
-- [ ] Создать финальный Stage 7 checkpoint только после PASS
-- [ ] Зафиксировать Stage 7 release verdict и остановиться без Stage 8
+- [x] Создать финальный Stage 7 checkpoint только после PASS
+- [x] Зафиксировать Stage 7 release verdict и остановиться без Stage 8 — PASS
 
 ## Stage 7 QA evidence
 
-- [ ] Full E2E
-- [ ] Security / ownership
-- [ ] State integrity
-- [ ] Renderer parity
-- [ ] Persistence / reload
-- [ ] Responsive/UI QA
-- [ ] Check / Tests / Build
-- [ ] Recovery package
-- [ ] Final release verdict
+- [x] Full E2E
+- [x] Security / ownership
+- [x] State integrity
+- [x] Renderer parity
+- [x] Persistence / reload
+- [x] Responsive/UI QA
+- [x] Check / Tests / Build
+- [x] Recovery package
+- [x] Final release verdict — PASS
 
 ## Stage 7 scope guard
 
 - [x] Не добавлять новые функции
 - [x] Не изменять Stage 1–6 без конкретного regression/blocker
 - [x] Не начинать Stage 8
+
+## Stage 7 blocker fix: minimal Stage 3 production entry point
+
+- [x] Добавить на `/` минимальный Create Project → IDEA → Brief → Confirm Brief → SiteSpec → Confirm SiteSpec → Build Draft UI через существующие tRPC handlers
+- [x] Не менять backend handlers, сущности, Workspace editor и `/home` demo
+- [x] Добавить loading/error/validation states и открыть созданный Draft в текущем Workspace
+- [x] Добавить UI-flow regression coverage без прямых DB/router вызовов в browser E2E
+- [x] Повторить полный Stage 7 browser E2E после blocker fix — PASS
+- [x] Повторить pnpm check, pnpm test и pnpm build — PASS
+- [x] При полном PASS обновить recovery package и создать финальный Stage 7 checkpoint

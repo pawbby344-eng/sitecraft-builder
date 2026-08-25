@@ -167,7 +167,7 @@ export default function Workspace() {
   const aiBusy = proposalMutation.isPending || applyProposalMutation.isPending || rejectProposalMutation.isPending;
   const effectiveScopeId = aiScopeType === "theme" ? null : aiScopeType === "page" ? selectedPageId : selectedBlockId;
   const lockAvailable = aiScopeType !== "page";
-  const previewSnapshot = useMemo(() => state ? { schemaVersion: "1" as const, project: { id: state.project.id, name: state.project.name, projectSlug: state.project.projectSlug }, theme: state.project.theme, pages: pages.map((page) => ({ ...page, purpose: page.purpose ?? null, blocks: state.blocks.filter((block) => block.pageId === page.id) })) } : null, [state, pages]);
+  const previewSnapshot = useMemo(() => state ? { schemaVersion: "1" as const, project: { id: state.project.id, name: state.project.name, projectSlug: state.project.projectSlug }, theme: state.project.theme, pages: pages.map((page) => ({ id: page.id, name: page.name, pageSlug: page.pageSlug, purpose: page.purpose ?? null, isHome: page.isHome, blocks: state.blocks.filter((block) => block.pageId === page.id).map((block) => ({ id: block.id, pageId: block.pageId, parentBlockId: block.parentBlockId, type: block.type, sortOrder: block.sortOrder, props: block.props })) })) } : null, [state, pages]);
   const previewPageSlug = pages.find((page) => page.id === selectedPageId)?.pageSlug;
   const previewSrcDoc = previewSnapshot ? renderSiteHtml(previewSnapshot, previewPageSlug) : "";
   const previewWidth = previewViewport === "desktop" ? "100%" : previewViewport === "tablet" ? "768px" : "390px";
@@ -248,7 +248,7 @@ export default function Workspace() {
 
   if (projectsQuery.isLoading) return <LoadingWorkspace />;
   if (projectsQuery.isError) return <WorkspaceError message="Could not load your workspace." onRetry={() => projectsQuery.refetch()} />;
-  if (!projects.length) return <EmptyWorkspace />;
+  if (!projects.length) return <EmptyWorkspace onBuilt={() => projectsQuery.refetch()} />;
 
   return (
     <div className="flex min-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f7f8fa] shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
@@ -337,4 +337,48 @@ function PropertiesPanel({ block, onChange }: { block: EditorBlock; onChange: (p
 function LoadingWorkspace() { return <div className="flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-2xl border border-slate-200 bg-white"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>; }
 function CanvasSkeleton() { return <div className="space-y-4"><div className="h-40 animate-pulse rounded-2xl bg-slate-200/70" /><div className="h-56 animate-pulse rounded-2xl bg-slate-200/70" /></div>; }
 function WorkspaceError({ message, onRetry }: { message: string; onRetry: () => void }) { return <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-center"><AlertCircle className="mb-3 h-7 w-7 text-red-400" /><p className="text-sm font-medium text-red-800">{message}</p><Button onClick={onRetry} variant="outline" className="mt-4 rounded-lg border-red-200 bg-white">Retry</Button></div>; }
-function EmptyWorkspace() { return <div className="flex min-h-[calc(100vh-2rem)] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 text-center"><Layers3 className="mb-4 h-10 w-10 text-slate-300" /><h1 className="text-xl font-semibold tracking-tight text-slate-950">Your workspace is ready</h1><p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">No projects exist for this private workspace yet. Create a project through the approved IDEA → Brief → SiteSpec → Build flow, then return here to edit its Draft.</p></div>; }
+function EmptyWorkspace({ onBuilt }: { onBuilt?: () => void }) { return <ProjectBuilder onBuilt={onBuilt} />; }
+
+function ProjectBuilder({ onBuilt }: { onBuilt?: () => void }) {
+  const [step, setStep] = useState<"start" | "brief" | "spec" | "built">("start");
+  const [projectId, setProjectId] = useState<number | null>(null);
+  const [briefId, setBriefId] = useState<number | null>(null);
+  const [siteSpecId, setSiteSpecId] = useState<number | null>(null);
+  const [revision, setRevision] = useState(1);
+  const [name, setName] = useState("");
+  const [projectSlug, setProjectSlug] = useState("");
+  const [idea, setIdea] = useState("");
+  const [brief, setBrief] = useState<any>(null);
+  const [siteSpec, setSiteSpec] = useState<any>(null);
+  const [error, setError] = useState("");
+  const createProject = trpc.architect.createProject.useMutation();
+  const createBrief = trpc.architect.createBrief.useMutation();
+  const updateBrief = trpc.architect.updateBrief.useMutation();
+  const confirmBrief = trpc.architect.confirmBrief.useMutation();
+  const generateSiteSpec = trpc.architect.generateSiteSpec.useMutation();
+  const confirmSiteSpec = trpc.architect.confirmSiteSpec.useMutation();
+  const applySiteSpec = trpc.architect.applySiteSpec.useMutation();
+  const busy = createProject.isPending || createBrief.isPending || updateBrief.isPending || confirmBrief.isPending || generateSiteSpec.isPending || confirmSiteSpec.isPending || applySiteSpec.isPending;
+  const run = async (action: () => Promise<void>) => { setError(""); try { await action(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not continue"); } };
+  const startProject = () => run(async () => {
+    const created = await createProject.mutateAsync({ name: name.trim(), projectSlug: projectSlug.trim(), idea: idea.trim() });
+    setProjectId(created.projectId); setRevision(created.revision);
+    const generated = await createBrief.mutateAsync({ projectId: created.projectId });
+    setBriefId(generated.briefId); setBrief(generated.brief); setStep("brief");
+  });
+  const saveBrief = () => run(async () => {
+    if (!projectId || !briefId || !brief) return;
+    await updateBrief.mutateAsync({ projectId, briefId, brief });
+    await confirmBrief.mutateAsync({ projectId, briefId });
+    const generated = await generateSiteSpec.mutateAsync({ projectId, briefId });
+    setSiteSpecId(generated.siteSpecId); setSiteSpec(generated.spec); setStep("spec");
+  });
+  const buildDraft = () => run(async () => {
+    if (!projectId || !siteSpecId) return;
+    await confirmSiteSpec.mutateAsync({ projectId, siteSpecId });
+    await applySiteSpec.mutateAsync({ projectId, siteSpecId, expectedRevision: revision });
+    setStep("built"); onBuilt?.();
+  });
+  if (step === "built") return <div className="flex min-h-[calc(100vh-2rem)] flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-white px-6 text-center"><Check className="mb-4 h-10 w-10 text-emerald-500" /><h1 className="text-xl font-semibold tracking-tight text-slate-950">Draft is ready</h1><p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">Your approved SiteSpec was built into the Draft. Open the Workspace to edit it.</p></div>;
+  return <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-10"><div className="w-full max-w-xl"><div className="mb-8"><div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">SiteCraft / New project</div><h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Turn an idea into a working Draft</h1><p className="mt-2 text-sm leading-6 text-slate-500">The existing architect flow stays in control: create the project, review the Brief, approve the SiteSpec, then build.</p></div>{error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}{step === "start" && <div className="space-y-5"><Field label="Project name"><Input data-testid="create-project-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Northstar Studio" /></Field><Field label="Project slug"><Input data-testid="create-project-slug" value={projectSlug} onChange={(event) => setProjectSlug(event.target.value)} placeholder="northstar-studio" /></Field><Field label="IDEA"><Textarea data-testid="create-project-idea" value={idea} onChange={(event) => setIdea(event.target.value)} rows={6} placeholder="A calm portfolio site for a small architecture studio..." /></Field><Button data-testid="create-project-submit" disabled={busy || !name.trim() || !projectSlug.trim() || !idea.trim()} onClick={startProject} className="h-11 rounded-xl bg-slate-950 px-5">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Create project</Button></div>}{step === "brief" && brief && <div className="space-y-5"><div><h2 className="text-xl font-semibold text-slate-950">Review the Brief</h2><p className="mt-1 text-sm text-slate-500">Edit the structured brief before it becomes a SiteSpec.</p></div><Field label="Audience"><Textarea data-testid="brief-audience" value={brief.audience} rows={3} onChange={(event) => setBrief({ ...brief, audience: event.target.value })} /></Field><Field label="Value proposition"><Textarea data-testid="brief-value" value={brief.valueProposition} rows={3} onChange={(event) => setBrief({ ...brief, valueProposition: event.target.value })} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field label="Tone"><SelectField value={brief.tone} onChange={(value) => setBrief({ ...brief, tone: value })} options={["calm", "bold", "editorial", "technical", "warm"]} /></Field><Field label="Primary goal"><SelectField value={brief.primaryGoal} onChange={(value) => setBrief({ ...brief, primaryGoal: value })} options={["book", "buy", "contact", "learn", "subscribe"]} /></Field></div><Button data-testid="confirm-brief" disabled={busy} onClick={saveBrief} className="h-11 rounded-xl bg-slate-950 px-5">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Confirm Brief</Button></div>}{step === "spec" && siteSpec && <div className="space-y-5"><div><h2 className="text-xl font-semibold text-slate-950">Confirm the SiteSpec</h2><p className="mt-1 text-sm text-slate-500">The canonical SiteSpec is validated by the server before Build.</p></div><div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"><div className="font-semibold">{siteSpec.projectName}</div><div className="mt-1 text-slate-500">{siteSpec.pages?.length ?? 0} page(s) · {siteSpec.pages?.reduce((total: number, page: any) => total + page.sections.length, 0) ?? 0} section(s)</div></div><Button data-testid="confirm-sitespec-build" disabled={busy} onClick={buildDraft} className="h-11 rounded-xl bg-slate-950 px-5">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Confirm SiteSpec & Build Draft</Button></div>}</div></div>;
+}
