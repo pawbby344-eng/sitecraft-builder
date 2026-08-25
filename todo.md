@@ -147,14 +147,14 @@
 - [x] Показать loading, empty, error, dirty и conflict states
 - [x] Не добавлять AI Local Edit, Locks UI, Preview/Publish и новые block types
 - [x] Добавить Stage 4 acceptance tests (real router/DB read, save, reload и stale conflict)
-- [ ] Запустить pnpm check, pnpm test и pnpm build; FAIL на production build: процесс завершён exit 143 во время rendering chunks при memory pressure sandbox
+- [x] Запустить pnpm check, pnpm test и pnpm build; первоначальный FAIL закрыт повторным обычным build PASS
 
 ## Stage 4 production build gate recovery
 
-- [ ] Сохранить WIP checkpoint текущего Stage 4 без изменения функциональности
-- [ ] Остановить dev server/watch и тяжёлые Vitest/Vite процессы перед build
-- [ ] Удалить только dist и зафиксировать доступную память до build
-- [ ] Проверить только новые Stage 4 imports и accidental bundle growth
-- [ ] Выполнить обычный pnpm build без специальных production-флагов
-- [ ] При повторном exit 143 зафиксировать последнюю строку, exit code, память, процессы и этап Vite
-- [ ] Повторно подтвердить pnpm check, pnpm test и Stage 4 integration acceptance
+- [x] Сохранить WIP checkpoint текущего Stage 4 без изменения функциональности
+- [x] Остановить dev server/watch и тяжёлые Vitest/Vite процессы перед build
+- [x] Удалить только dist и зафиксировать доступную память до build
+- [x] Проверить только новые Stage 4 imports и accidental bundle growth
+- [x] Выполнить обычный pnpm build без специальных production-флагов
+- [x] При повторном exit 143 зафиксировать последнюю строку, exit code, память, процессы и этап Vite — не применялось: обычный build завершился с exit code 0
+- [x] Повторно подтвердить pnpm check, pnpm test и Stage 4 integration acceptance
