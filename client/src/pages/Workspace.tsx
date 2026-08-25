@@ -6,6 +6,7 @@ import { blockPropsByType } from "../../../shared/site-engine/schemas";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { moveEditorSection, type EditorBlock as SharedEditorBlock } from "../../../shared/site-engine/editor";
+import { renderSiteHtml } from "../../../shared/site-engine/renderer";
 import {
   AlertCircle,
   ArrowDown,
@@ -22,6 +23,10 @@ import {
   PanelRight,
   Save,
   Sparkles,
+  Monitor,
+  Tablet,
+  Smartphone,
+  Globe2,
   Lock,
   Unlock,
   SquareStack,
@@ -40,7 +45,7 @@ type WorkspaceProject = {
   updatedAt: Date | string;
 };
 type ArchitectState = {
-  project: { id: number; name: string; projectSlug: string; projectDraftRevision: number; theme: unknown };
+  project: { id: number; name: string; projectSlug: string; projectDraftRevision: number; theme: unknown; isPublished?: boolean; publishedRevisionId?: number | null };
   pages: Array<{ id: number; name: string; pageSlug: string; purpose: string; isHome: boolean }>;
   blocks: EditorBlock[];
 };
@@ -105,6 +110,9 @@ export default function Workspace() {
   const [aiInstruction, setAiInstruction] = useState("");
   const [activeProposal, setActiveProposal] = useState<{ id: number; proposal: { summary: string; changes: Array<{ kind: string; blockId?: number; props: unknown }> } } | null>(null);
   const [aiMessage, setAiMessage] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewViewport, setPreviewViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [publishMessage, setPublishMessage] = useState("");
 
   const projects = (projectsQuery.data ?? []) as WorkspaceProject[];
   useEffect(() => {
@@ -115,6 +123,7 @@ export default function Workspace() {
   const stateInput = useMemo(() => ({ projectId: selectedProjectId ?? 0 }), [selectedProjectId]);
   const stateQuery = trpc.architect.state.useQuery(stateInput, { enabled: selectedProjectId !== null });
   const aiStateQuery = trpc.aiEdit.state.useQuery(stateInput, { enabled: selectedProjectId !== null });
+  const publishStatusQuery = trpc.publish.status.useQuery(stateInput, { enabled: selectedProjectId !== null });
   const state = stateQuery.data as ArchitectState | undefined;
   const pages = state?.pages ?? [];
 
@@ -153,9 +162,15 @@ export default function Workspace() {
   const applyProposalMutation = trpc.aiEdit.applyProposal.useMutation();
   const rejectProposalMutation = trpc.aiEdit.rejectProposal.useMutation();
   const lockMutation = trpc.aiEdit.setLock.useMutation();
+  const publishMutation = trpc.publish.publish.useMutation();
+  const unpublishMutation = trpc.publish.unpublish.useMutation();
   const aiBusy = proposalMutation.isPending || applyProposalMutation.isPending || rejectProposalMutation.isPending;
   const effectiveScopeId = aiScopeType === "theme" ? null : aiScopeType === "page" ? selectedPageId : selectedBlockId;
   const lockAvailable = aiScopeType !== "page";
+  const previewSnapshot = useMemo(() => state ? { schemaVersion: "1" as const, project: { id: state.project.id, name: state.project.name, projectSlug: state.project.projectSlug }, theme: state.project.theme, pages: pages.map((page) => ({ ...page, purpose: page.purpose ?? null, blocks: state.blocks.filter((block) => block.pageId === page.id) })) } : null, [state, pages]);
+  const previewPageSlug = pages.find((page) => page.id === selectedPageId)?.pageSlug;
+  const previewSrcDoc = previewSnapshot ? renderSiteHtml(previewSnapshot, previewPageSlug) : "";
+  const previewWidth = previewViewport === "desktop" ? "100%" : previewViewport === "tablet" ? "768px" : "390px";
   const activeLock = (aiStateQuery.data?.locks ?? []).find((lock) => lock.scopeType === aiScopeType && (lock.scopeId ?? null) === (effectiveScopeId ?? null) && lock.locked);
 
   const askAI = async () => {
@@ -179,6 +194,16 @@ export default function Workspace() {
   const applyAI = async () => {
     if (!state || !activeProposal || dirty) { setAiMessage(dirty ? "Save the Draft before applying a proposal" : "No proposal selected"); return; }
     try { await applyProposalMutation.mutateAsync({ projectId: state.project.id, proposalId: activeProposal.id, expectedRevision: state.project.projectDraftRevision }); setActiveProposal(null); setAiMessage("Proposal applied"); await Promise.all([stateQuery.refetch(), projectsQuery.refetch(), aiStateQuery.refetch()]); } catch (error) { setAiMessage(error instanceof Error ? error.message : "Could not apply proposal"); }
+  };
+
+  const publishDraft = async () => {
+    if (!state || dirty || publishMutation.isPending) { setPublishMessage(dirty ? "Save the Draft before publishing" : "No project selected"); return; }
+    try { await publishMutation.mutateAsync({ projectId: state.project.id, expectedRevision: state.project.projectDraftRevision }); setPublishMessage("Published revision updated"); await Promise.all([publishStatusQuery.refetch(), stateQuery.refetch(), projectsQuery.refetch()]); } catch (error) { setPublishMessage(error instanceof Error ? error.message : "Could not publish this Draft"); }
+  };
+
+  const unpublishDraft = async () => {
+    if (!state || unpublishMutation.isPending) return;
+    try { await unpublishMutation.mutateAsync({ projectId: state.project.id }); setPublishMessage("Public site unpublished"); await publishStatusQuery.refetch(); } catch (error) { setPublishMessage(error instanceof Error ? error.message : "Could not unpublish this site"); }
   };
 
   const toggleLock = async () => {
@@ -237,7 +262,7 @@ export default function Workspace() {
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><span className={cn("h-2 w-2 rounded-full", dirty ? "bg-amber-400" : "bg-emerald-500")} />{dirty ? "Unsaved changes" : "All changes saved"}</div>
-          <Button onClick={save} disabled={!dirty || isSaving} className="h-10 rounded-xl bg-slate-950 px-4 text-sm text-white shadow-sm hover:bg-slate-800">
+          <div className="hidden items-center gap-2 md:flex"><Button onClick={() => setPreviewOpen((value) => !value)} variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-700">{previewOpen ? <PanelRight className="mr-2 h-4 w-4" /> : <Monitor className="mr-2 h-4 w-4" />}{previewOpen ? "Editor" : "Preview"}</Button>{publishStatusQuery.data?.isPublished ? <Badge className="rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">Published</Badge> : <Badge variant="secondary" className="rounded-full">Draft only</Badge>}</div><Button onClick={save} disabled={!dirty || isSaving} className="h-10 rounded-xl bg-slate-950 px-4 text-sm text-white shadow-sm hover:bg-slate-800">
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save draft
           </Button>
@@ -265,7 +290,7 @@ export default function Workspace() {
         <main className="min-h-0 overflow-y-auto bg-[#f7f8fa] p-5 lg:p-8">
           <div className="mx-auto max-w-[860px]">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Visual editor</p><h1 className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{state?.project.name ?? "Loading project"}</h1><p className="mt-1 text-sm text-slate-500">{pages.find((page) => page.id === selectedPageId)?.name ?? "Select a page"} · Draft revision {state?.project.projectDraftRevision ?? "—"}</p></div><div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500"><Circle className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500" /> Private workspace</div></div>
-            {stateQuery.isLoading ? <CanvasSkeleton /> : stateQuery.isError ? <WorkspaceError message="Could not load this project." onRetry={() => stateQuery.refetch()} /> : <div className="space-y-4">
+            {previewOpen ? <PreviewPanel viewport={previewViewport} setViewport={setPreviewViewport} srcDoc={previewSrcDoc} /> : stateQuery.isLoading ? <CanvasSkeleton /> : stateQuery.isError ? <WorkspaceError message="Could not load this project." onRetry={() => stateQuery.refetch()} /> : <div className="space-y-4">
               {sections.map((section, sectionIndex) => {
                 const sectionProps = safeProps(section);
                 const selected = section.id === selectedBlockId;
@@ -285,12 +310,14 @@ export default function Workspace() {
           {selectedBlock ? <PropertiesPanel block={selectedBlock} onChange={(patch) => updateBlock(selectedBlock.id, patch)} /> : <div className="flex min-h-[280px] flex-col items-center justify-center text-center"><MousePointer2 className="mb-3 h-7 w-7 text-slate-300" /><p className="text-sm font-medium text-slate-700">Select a block</p><p className="mt-1 text-xs leading-5 text-slate-400">Choose a Section, Text, Image or Button in the canvas to edit its properties.</p></div>}
           {saveState !== "idle" && <div className={cn("mt-8 rounded-xl border p-3 text-xs", saveState === "error" ? "border-red-200 bg-red-50 text-red-700" : saveState === "saved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500")}><div className="flex items-start gap-2">{saveState === "error" ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : saveState === "saved" ? <Check className="mt-0.5 h-4 w-4" /> : <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />}<span>{saveMessage || "Saving draft…"}</span></div></div>}
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-500" /><span className="text-xs font-semibold text-slate-900">AI Local Edit</span></div><p className="mt-1 text-[11px] leading-4 text-slate-400">Proposal only. Draft changes after Apply.</p></div><Badge variant="secondary" className="rounded-full text-[10px]">{aiStateQuery.data?.proposals?.filter((item) => item.status === "pending").length ?? 0} pending</Badge></div><div className="mt-4 space-y-3"><Field label="Scope"><SelectField value={aiScopeType} onChange={(value) => setAiScopeType(value as typeof aiScopeType)} options={["block", "section", "page", "theme"]} /></Field><Field label="Command"><Textarea value={aiInstruction} rows={3} placeholder="Make the headline more direct" onChange={(event) => setAiInstruction(event.target.value)} /></Field><div className="flex gap-2"><Button onClick={askAI} disabled={aiBusy || !aiInstruction.trim() || effectiveScopeId === null && aiScopeType !== "theme"} className="h-9 flex-1 rounded-lg bg-slate-950 text-xs text-white hover:bg-slate-800">{proposalMutation.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-2 h-3.5 w-3.5" />}Ask AI</Button><Button onClick={toggleLock} disabled={!lockAvailable || lockMutation.isPending || effectiveScopeId === null && aiScopeType !== "theme"} variant="outline" className="h-9 rounded-lg px-3 text-xs">{activeLock ? <Unlock className="mr-1.5 h-3.5 w-3.5" /> : <Lock className="mr-1.5 h-3.5 w-3.5" />}{activeLock ? "Unlock" : "Lock"}</Button></div>{activeProposal && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-950">{activeProposal.proposal.summary}</p><p className="mt-1 text-[11px] text-amber-800">{activeProposal.proposal.changes.length} validated change{activeProposal.proposal.changes.length === 1 ? "" : "s"}. Review before applying.</p><div className="mt-3 space-y-2">{activeProposal.proposal.changes.map((change, index) => { const before = change.kind === "theme" ? state?.project.theme : draftBlocks.find((block) => block.id === change.blockId)?.props; return <div key={`${change.kind}-${change.blockId ?? index}`} className="grid gap-2 text-[10px] sm:grid-cols-2"><div className="rounded-lg border border-amber-200 bg-white/70 p-2"><span className="font-semibold uppercase tracking-wider text-slate-400">Before</span><pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-slate-600">{JSON.stringify(before, null, 2)}</pre></div><div className="rounded-lg border border-amber-300 bg-amber-100/50 p-2"><span className="font-semibold uppercase tracking-wider text-amber-700">After</span><pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-amber-950">{JSON.stringify(change.props, null, 2)}</pre></div></div>; })}</div><div className="mt-3 flex gap-2"><Button onClick={applyAI} disabled={aiBusy || dirty} className="h-8 flex-1 rounded-lg bg-amber-500 text-xs text-white hover:bg-amber-600">{applyProposalMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Apply</Button><Button onClick={rejectAI} disabled={aiBusy} variant="outline" className="h-8 rounded-lg bg-white text-xs">Reject</Button></div></div>}{aiMessage && <p className="text-[11px] leading-4 text-slate-500">{aiMessage}</p>}</div></div>
-          <div className="mt-8 rounded-xl bg-slate-950 p-4 text-white"><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-300" /><span className="text-xs font-semibold">Editor guardrails</span></div><p className="mt-2 text-xs leading-5 text-slate-400">Changes stay inside the current Draft. AI Local Edit and publishing are intentionally not available in this stage.</p></div>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-slate-500" /><span className="text-xs font-semibold text-slate-900">Publish</span></div><p className="mt-1 text-[11px] leading-4 text-slate-400">Public site reads only the latest immutable revision.</p><div className="mt-3 flex gap-2"><Button onClick={publishDraft} disabled={dirty || publishMutation.isPending} className="h-9 flex-1 rounded-lg bg-slate-950 text-xs text-white hover:bg-slate-800">{publishMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}{publishStatusQuery.data?.isPublished ? "Re-publish" : "Publish"}</Button>{publishStatusQuery.data?.isPublished && <Button onClick={unpublishDraft} disabled={unpublishMutation.isPending} variant="outline" className="h-9 rounded-lg px-3 text-xs">Unpublish</Button>}</div>{publishStatusQuery.data?.isPublished && <a className="mt-3 block truncate text-[11px] text-slate-500 underline underline-offset-2" href={`/site/${publishStatusQuery.data.projectSlug}`} target="_blank" rel="noreferrer">{window.location.origin}/site/{publishStatusQuery.data.projectSlug}</a>}{publishMessage && <p className="mt-2 text-[11px] text-slate-500">{publishMessage}</p>}</div><div className="mt-8 rounded-xl bg-slate-950 p-4 text-white"><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-300" /><span className="text-xs font-semibold">Editor guardrails</span></div><p className="mt-2 text-xs leading-5 text-slate-400">Changes stay inside the current Draft. AI Local Edit and publishing are intentionally not available in this stage.</p></div>
         </aside>
       </div>
     </div>
   );
 }
+
+function PreviewPanel({ viewport, setViewport, srcDoc }: { viewport: "desktop" | "tablet" | "mobile"; setViewport: (viewport: "desktop" | "tablet" | "mobile") => void; srcDoc: string }) { return <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Draft Preview</p><p className="mt-1 text-sm text-slate-500">Read-only · viewport changes never save</p></div><div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">{([["desktop", Monitor], ["tablet", Tablet], ["mobile", Smartphone]] as const).map(([value, Icon]) => <button key={value} onClick={() => setViewport(value)} className={cn("rounded-md p-2 transition", viewport === value ? "bg-white text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-700")} aria-label={`${value} preview`}><Icon className="h-4 w-4" /></button>)}</div></div><div className="mt-4 flex min-h-[660px] justify-center overflow-auto rounded-xl bg-slate-100 p-4"><iframe title="Draft responsive preview" srcDoc={srcDoc} className="min-h-[620px] shrink-0 rounded-lg border border-slate-200 bg-white shadow-xl" style={{ width: viewport === "desktop" ? "100%" : viewport === "tablet" ? "768px" : "390px" }} /></div></div>; }
 
 function CanvasBlock({ block, selected, onSelect }: { block: EditorBlock; selected: boolean; onSelect: () => void }) {
   const props = safeProps(block);

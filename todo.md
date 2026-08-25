@@ -183,3 +183,23 @@
 - [x] Повторно запустить pnpm check, полный pnpm test и pnpm build перед Stage 5 checkpoint
 
 - [x] Усилить repeated-Apply test: после rejected повторного Apply проверить точный набор pageBlocks.id в reload и отсутствие дублей в БД
+
+## Текущий этап: Responsive Preview + Publish
+
+- [x] Добавить общий renderer/component registry для Draft Preview и Published Site
+- [x] Реализовать Draft-only responsive Preview с Desktop/Tablet/Mobile viewport-контейнерами
+- [x] Убедиться, что Preview не сохраняет Draft и не создаёт Published Revision
+- [x] Реализовать серверную Publish validation: ownership, revision, slugs, home, theme, hierarchy, strict props, alt и safe href
+- [x] Реализовать транзакционный immutable Published Revision snapshot и public pointer
+- [x] Реализовать public resolver только по Published Revision и schemaVersion guard
+- [x] Реализовать `/site/:projectSlug` и `/site/:projectSlug/:pageSlug` с корректными 404
+- [x] Реализовать re-publish, сохранение старой revision и isolation от Draft changes
+- [x] Реализовать транзакционный Unpublish без изменения Draft
+- [x] Добавить Workspace Preview/Publish/Published/Re-publish/Unpublish states
+- [x] Добавить Stage 6 real-router/DB integration acceptance tests
+- [x] Запустить pnpm check, pnpm test и pnpm build; остановиться при FAIL
+
+## Stage 6 acceptance gap closure
+
+- [x] Добавить integration test, что Draft Preview использует текущий Draft через общий renderer и viewport switch не меняет Draft/published state
+- [x] Добавить HTTP/Express integration tests для `/site/:projectSlug` и `/site/:projectSlug/:pageSlug`, включая 404 и snapshot-only content

@@ -9,6 +9,8 @@ import { applySiteSpec, confirmBrief, confirmSiteSpec, createBrief, createProjec
 import { listWorkspaceProjects } from "./workspace";
 import { applyProposal, createProposal, getAiEditState, rejectProposal, setScopeLock } from "./ai-edit";
 import { applyProposalInputSchema, createProposalInputSchema, lockInputSchema, proposalIdInputSchema } from "../shared/site-engine/ai-edit";
+import { publishInputSchema } from "../shared/site-engine/publish";
+import { getPublishStatus, publishDraft, unpublishProject } from "./publish";
 
 export const appRouter = router({
   system: systemRouter,
@@ -23,6 +25,12 @@ export const appRouter = router({
 
   workspace: router({
     projects: protectedProcedure.query(({ ctx }) => listWorkspaceProjects(ctx.user.id)),
+  }),
+
+  publish: router({
+    status: protectedProcedure.input(projectOnlySchema).query(({ ctx, input }) => getPublishStatus(ctx.user.id, input.projectId)),
+    publish: protectedProcedure.input(publishInputSchema).mutation(({ ctx, input }) => publishDraft(ctx.user.id, input)),
+    unpublish: protectedProcedure.input(projectOnlySchema).mutation(({ ctx, input }) => unpublishProject(ctx.user.id, input.projectId)),
   }),
 
   aiEdit: router({
