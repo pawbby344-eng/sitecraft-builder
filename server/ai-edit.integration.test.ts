@@ -127,6 +127,16 @@ describe.sequential("Stage 5 AI Local Edit and Locks", () => {
     await c.aiEdit.setLock({ projectId, scopeType: "section", scopeId: sectionId, locked: false });
   });
 
+  it("keeps concurrent lock writes unique for one canonical scope", async () => {
+    const c = caller(owner);
+    await Promise.all([
+      c.aiEdit.setLock({ projectId, scopeType: "block", scopeId: textBlockId, locked: true }),
+      c.aiEdit.setLock({ projectId, scopeType: "block", scopeId: textBlockId, locked: true }),
+    ]);
+    const rows = await db.select({ id: scopeLocks.id }).from(scopeLocks).where(and(eq(scopeLocks.projectId, projectId), eq(scopeLocks.scopeType, "block"), eq(scopeLocks.scopeId, textBlockId)));
+    expect(rows).toHaveLength(1);
+  });
+
   it("enforces theme lock and atomically rejects invalid proposal", async () => {
     const c = caller(owner);
     let current = await c.architect.state({ projectId });

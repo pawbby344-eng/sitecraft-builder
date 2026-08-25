@@ -1,12 +1,18 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
 import Workspace from "./pages/Workspace";
 import DashboardLayout from "./components/DashboardLayout";
+import { useEffect } from "react";
+
+function HomeRedirect() {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate("/", { replace: true }); }, [navigate]);
+  return null;
+}
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -15,7 +21,7 @@ function Router() {
       <Route path={"/"}>
         <DashboardLayout><Workspace /></DashboardLayout>
       </Route>
-      <Route path={"/home"} component={Home} />
+      <Route path={"/home"} component={HomeRedirect} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

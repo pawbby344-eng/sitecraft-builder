@@ -31,6 +31,7 @@ import {
   Unlock,
   SquareStack,
   Type,
+  Plus,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -113,6 +114,7 @@ export default function Workspace() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewViewport, setPreviewViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [publishMessage, setPublishMessage] = useState("");
+  const [builderOpen, setBuilderOpen] = useState(false);
 
   const projects = (projectsQuery.data ?? []) as WorkspaceProject[];
   useEffect(() => {
@@ -135,7 +137,15 @@ export default function Workspace() {
   }, [pages, selectedPageId]);
 
   useEffect(() => {
-    if (!state || selectedPageId === null || dirty) return;
+    if (!state || selectedPageId === null) {
+      if (!dirty) {
+        setDraftBlocks([]);
+        setOriginalBlocks([]);
+        setSelectedBlockId(null);
+      }
+      return;
+    }
+    if (dirty) return;
     const nextBlocks = state.blocks.filter((block) => block.pageId === selectedPageId).sort((a, b) => a.sortOrder - b.sortOrder);
     setDraftBlocks(nextBlocks);
     setOriginalBlocks(nextBlocks);
@@ -167,7 +177,7 @@ export default function Workspace() {
   const aiBusy = proposalMutation.isPending || applyProposalMutation.isPending || rejectProposalMutation.isPending;
   const effectiveScopeId = aiScopeType === "theme" ? null : aiScopeType === "page" ? selectedPageId : selectedBlockId;
   const lockAvailable = aiScopeType !== "page";
-  const previewSnapshot = useMemo(() => state ? { schemaVersion: "1" as const, project: { id: state.project.id, name: state.project.name, projectSlug: state.project.projectSlug }, theme: state.project.theme, pages: pages.map((page) => ({ id: page.id, name: page.name, pageSlug: page.pageSlug, purpose: page.purpose ?? null, isHome: page.isHome, blocks: state.blocks.filter((block) => block.pageId === page.id).map((block) => ({ id: block.id, pageId: block.pageId, parentBlockId: block.parentBlockId, type: block.type, sortOrder: block.sortOrder, props: block.props })) })) } : null, [state, pages]);
+  const previewSnapshot = useMemo(() => state && pages.length > 0 ? { schemaVersion: "1" as const, project: { id: state.project.id, name: state.project.name, projectSlug: state.project.projectSlug }, theme: state.project.theme, pages: pages.map((page) => ({ id: page.id, name: page.name, pageSlug: page.pageSlug, purpose: page.purpose ?? null, isHome: page.isHome, blocks: state.blocks.filter((block) => block.pageId === page.id).map((block) => ({ id: block.id, pageId: block.pageId, parentBlockId: block.parentBlockId, type: block.type, sortOrder: block.sortOrder, props: block.props })) })) } : null, [state, pages]);
   const previewPageSlug = pages.find((page) => page.id === selectedPageId)?.pageSlug;
   const previewSrcDoc = previewSnapshot ? renderSiteHtml(previewSnapshot, previewPageSlug) : "";
   const previewWidth = previewViewport === "desktop" ? "100%" : previewViewport === "tablet" ? "768px" : "390px";
@@ -202,8 +212,9 @@ export default function Workspace() {
   };
 
   const unpublishDraft = async () => {
-    if (!state || unpublishMutation.isPending) return;
-    try { await unpublishMutation.mutateAsync({ projectId: state.project.id }); setPublishMessage("Public site unpublished"); await publishStatusQuery.refetch(); } catch (error) { setPublishMessage(error instanceof Error ? error.message : "Could not unpublish this site"); }
+    const expectedPublishedRevisionId = publishStatusQuery.data?.publishedRevisionId;
+    if (!state || !expectedPublishedRevisionId || unpublishMutation.isPending) return;
+    try { await unpublishMutation.mutateAsync({ projectId: state.project.id, expectedPublishedRevisionId }); setPublishMessage("Public site unpublished"); await publishStatusQuery.refetch(); } catch (error) { setPublishMessage(error instanceof Error ? error.message : "Could not unpublish this site"); }
   };
 
   const toggleLock = async () => {
@@ -248,7 +259,8 @@ export default function Workspace() {
 
   if (projectsQuery.isLoading) return <LoadingWorkspace />;
   if (projectsQuery.isError) return <WorkspaceError message="Could not load your workspace." onRetry={() => projectsQuery.refetch()} />;
-  if (!projects.length) return <EmptyWorkspace onBuilt={() => projectsQuery.refetch()} />;
+  if (!projects.length) return <EmptyWorkspace onBuilt={(projectId) => { setSelectedProjectId(projectId); projectsQuery.refetch(); }} />;
+  if (builderOpen) return <ProjectBuilder onBuilt={(projectId) => { setBuilderOpen(false); setSelectedProjectId(projectId); projectsQuery.refetch(); }} />;
 
   return (
     <div className="flex min-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f7f8fa] shadow-[0_18px_60px_rgba(15,23,42,0.07)]">
@@ -271,7 +283,7 @@ export default function Workspace() {
 
       <div className="grid min-h-0 flex-1 grid-cols-[236px_minmax(0,1fr)_280px]">
         <aside className="min-h-0 overflow-y-auto border-r border-slate-200 bg-white p-4">
-          <div className="mb-6 flex items-center justify-between"><span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Projects</span><span className="text-xs text-slate-400">{projects.length}</span></div>
+          <div className="mb-6 flex items-center justify-between"><span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Projects</span><div className="flex items-center gap-2"><span className="text-xs text-slate-400">{projects.length}</span><button aria-label="Create new project" onClick={() => setBuilderOpen(true)} className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-950"><Plus className="h-3.5 w-3.5" /></button></div></div>
           <div className="space-y-1.5">
             {projects.map((project) => (
               <button key={project.id} onClick={() => { setSelectedProjectId(project.id); setDirty(false); }} className={cn("group w-full rounded-xl border px-3 py-3 text-left transition", selectedProjectId === project.id ? "border-slate-300 bg-slate-950 text-white shadow-sm" : "border-transparent hover:border-slate-200 hover:bg-slate-50")}>
@@ -310,7 +322,7 @@ export default function Workspace() {
           {selectedBlock ? <PropertiesPanel block={selectedBlock} onChange={(patch) => updateBlock(selectedBlock.id, patch)} /> : <div className="flex min-h-[280px] flex-col items-center justify-center text-center"><MousePointer2 className="mb-3 h-7 w-7 text-slate-300" /><p className="text-sm font-medium text-slate-700">Select a block</p><p className="mt-1 text-xs leading-5 text-slate-400">Choose a Section, Text, Image or Button in the canvas to edit its properties.</p></div>}
           {saveState !== "idle" && <div className={cn("mt-8 rounded-xl border p-3 text-xs", saveState === "error" ? "border-red-200 bg-red-50 text-red-700" : saveState === "saved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500")}><div className="flex items-start gap-2">{saveState === "error" ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : saveState === "saved" ? <Check className="mt-0.5 h-4 w-4" /> : <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />}<span>{saveMessage || "Saving draft…"}</span></div></div>}
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-500" /><span className="text-xs font-semibold text-slate-900">AI Local Edit</span></div><p className="mt-1 text-[11px] leading-4 text-slate-400">Proposal only. Draft changes after Apply.</p></div><Badge variant="secondary" className="rounded-full text-[10px]">{aiStateQuery.data?.proposals?.filter((item) => item.status === "pending").length ?? 0} pending</Badge></div><div className="mt-4 space-y-3"><Field label="Scope"><SelectField value={aiScopeType} onChange={(value) => setAiScopeType(value as typeof aiScopeType)} options={["block", "section", "page", "theme"]} /></Field><Field label="Command"><Textarea value={aiInstruction} rows={3} placeholder="Make the headline more direct" onChange={(event) => setAiInstruction(event.target.value)} /></Field><div className="flex gap-2"><Button onClick={askAI} disabled={aiBusy || !aiInstruction.trim() || effectiveScopeId === null && aiScopeType !== "theme"} className="h-9 flex-1 rounded-lg bg-slate-950 text-xs text-white hover:bg-slate-800">{proposalMutation.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-2 h-3.5 w-3.5" />}Ask AI</Button><Button onClick={toggleLock} disabled={!lockAvailable || lockMutation.isPending || effectiveScopeId === null && aiScopeType !== "theme"} variant="outline" className="h-9 rounded-lg px-3 text-xs">{activeLock ? <Unlock className="mr-1.5 h-3.5 w-3.5" /> : <Lock className="mr-1.5 h-3.5 w-3.5" />}{activeLock ? "Unlock" : "Lock"}</Button></div>{activeProposal && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-950">{activeProposal.proposal.summary}</p><p className="mt-1 text-[11px] text-amber-800">{activeProposal.proposal.changes.length} validated change{activeProposal.proposal.changes.length === 1 ? "" : "s"}. Review before applying.</p><div className="mt-3 space-y-2">{activeProposal.proposal.changes.map((change, index) => { const before = change.kind === "theme" ? state?.project.theme : draftBlocks.find((block) => block.id === change.blockId)?.props; return <div key={`${change.kind}-${change.blockId ?? index}`} className="grid gap-2 text-[10px] sm:grid-cols-2"><div className="rounded-lg border border-amber-200 bg-white/70 p-2"><span className="font-semibold uppercase tracking-wider text-slate-400">Before</span><pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-slate-600">{JSON.stringify(before, null, 2)}</pre></div><div className="rounded-lg border border-amber-300 bg-amber-100/50 p-2"><span className="font-semibold uppercase tracking-wider text-amber-700">After</span><pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-amber-950">{JSON.stringify(change.props, null, 2)}</pre></div></div>; })}</div><div className="mt-3 flex gap-2"><Button onClick={applyAI} disabled={aiBusy || dirty} className="h-8 flex-1 rounded-lg bg-amber-500 text-xs text-white hover:bg-amber-600">{applyProposalMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Apply</Button><Button onClick={rejectAI} disabled={aiBusy} variant="outline" className="h-8 rounded-lg bg-white text-xs">Reject</Button></div></div>}{aiMessage && <p className="text-[11px] leading-4 text-slate-500">{aiMessage}</p>}</div></div>
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-slate-500" /><span className="text-xs font-semibold text-slate-900">Publish</span></div><p className="mt-1 text-[11px] leading-4 text-slate-400">Public site reads only the latest immutable revision.</p><div className="mt-3 flex gap-2"><Button onClick={publishDraft} disabled={dirty || publishMutation.isPending} className="h-9 flex-1 rounded-lg bg-slate-950 text-xs text-white hover:bg-slate-800">{publishMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}{publishStatusQuery.data?.isPublished ? "Re-publish" : "Publish"}</Button>{publishStatusQuery.data?.isPublished && <Button onClick={unpublishDraft} disabled={unpublishMutation.isPending} variant="outline" className="h-9 rounded-lg px-3 text-xs">Unpublish</Button>}</div>{publishStatusQuery.data?.isPublished && <a className="mt-3 block truncate text-[11px] text-slate-500 underline underline-offset-2" href={`/site/${publishStatusQuery.data.projectSlug}`} target="_blank" rel="noreferrer">{window.location.origin}/site/{publishStatusQuery.data.projectSlug}</a>}{publishMessage && <p className="mt-2 text-[11px] text-slate-500">{publishMessage}</p>}</div><div className="mt-8 rounded-xl bg-slate-950 p-4 text-white"><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-300" /><span className="text-xs font-semibold">Editor guardrails</span></div><p className="mt-2 text-xs leading-5 text-slate-400">Changes stay inside the current Draft. AI Local Edit and publishing are intentionally not available in this stage.</p></div>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Globe2 className="h-4 w-4 text-slate-500" /><span className="text-xs font-semibold text-slate-900">Publish</span></div><p className="mt-1 text-[11px] leading-4 text-slate-400">Public site reads only the latest immutable revision.</p><div className="mt-3 flex gap-2"><Button onClick={publishDraft} disabled={dirty || publishMutation.isPending} className="h-9 flex-1 rounded-lg bg-slate-950 text-xs text-white hover:bg-slate-800">{publishMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}{publishStatusQuery.data?.isPublished ? "Re-publish" : "Publish"}</Button>{publishStatusQuery.data?.isPublished && <Button onClick={unpublishDraft} disabled={unpublishMutation.isPending} variant="outline" className="h-9 rounded-lg px-3 text-xs">Unpublish</Button>}</div>{publishStatusQuery.data?.isPublished && <a className="mt-3 block truncate text-[11px] text-slate-500 underline underline-offset-2" href={`/site/${publishStatusQuery.data.projectSlug}`} target="_blank" rel="noreferrer">{window.location.origin}/site/{publishStatusQuery.data.projectSlug}</a>}{publishMessage && <p className="mt-2 text-[11px] text-slate-500">{publishMessage}</p>}</div><div className="mt-8 rounded-xl bg-slate-950 p-4 text-white"><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-300" /><span className="text-xs font-semibold">Editor guardrails</span></div><p className="mt-2 text-xs leading-5 text-slate-400">Changes stay inside the current Draft. AI edits are reviewed before Apply, and publishing always creates an immutable revision.</p></div>
         </aside>
       </div>
     </div>
@@ -337,9 +349,9 @@ function PropertiesPanel({ block, onChange }: { block: EditorBlock; onChange: (p
 function LoadingWorkspace() { return <div className="flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-2xl border border-slate-200 bg-white"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>; }
 function CanvasSkeleton() { return <div className="space-y-4"><div className="h-40 animate-pulse rounded-2xl bg-slate-200/70" /><div className="h-56 animate-pulse rounded-2xl bg-slate-200/70" /></div>; }
 function WorkspaceError({ message, onRetry }: { message: string; onRetry: () => void }) { return <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-center"><AlertCircle className="mb-3 h-7 w-7 text-red-400" /><p className="text-sm font-medium text-red-800">{message}</p><Button onClick={onRetry} variant="outline" className="mt-4 rounded-lg border-red-200 bg-white">Retry</Button></div>; }
-function EmptyWorkspace({ onBuilt }: { onBuilt?: () => void }) { return <ProjectBuilder onBuilt={onBuilt} />; }
+function EmptyWorkspace({ onBuilt }: { onBuilt?: (projectId: number) => void }) { return <ProjectBuilder onBuilt={onBuilt} />; }
 
-function ProjectBuilder({ onBuilt }: { onBuilt?: () => void }) {
+function ProjectBuilder({ onBuilt }: { onBuilt?: (projectId: number) => void }) {
   const [step, setStep] = useState<"start" | "brief" | "spec" | "built">("start");
   const [projectId, setProjectId] = useState<number | null>(null);
   const [briefId, setBriefId] = useState<number | null>(null);
@@ -377,7 +389,7 @@ function ProjectBuilder({ onBuilt }: { onBuilt?: () => void }) {
     if (!projectId || !siteSpecId) return;
     await confirmSiteSpec.mutateAsync({ projectId, siteSpecId });
     await applySiteSpec.mutateAsync({ projectId, siteSpecId, expectedRevision: revision });
-    setStep("built"); onBuilt?.();
+    setStep("built"); onBuilt?.(projectId);
   });
   if (step === "built") return <div className="flex min-h-[calc(100vh-2rem)] flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-white px-6 text-center"><Check className="mb-4 h-10 w-10 text-emerald-500" /><h1 className="text-xl font-semibold tracking-tight text-slate-950">Draft is ready</h1><p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">Your approved SiteSpec was built into the Draft. Open the Workspace to edit it.</p></div>;
   return <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-10"><div className="w-full max-w-xl"><div className="mb-8"><div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">SiteCraft / New project</div><h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Turn an idea into a working Draft</h1><p className="mt-2 text-sm leading-6 text-slate-500">The existing architect flow stays in control: create the project, review the Brief, approve the SiteSpec, then build.</p></div>{error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}{step === "start" && <div className="space-y-5"><Field label="Project name"><Input data-testid="create-project-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Northstar Studio" /></Field><Field label="Project slug"><Input data-testid="create-project-slug" value={projectSlug} onChange={(event) => setProjectSlug(event.target.value)} placeholder="northstar-studio" /></Field><Field label="IDEA"><Textarea data-testid="create-project-idea" value={idea} onChange={(event) => setIdea(event.target.value)} rows={6} placeholder="A calm portfolio site for a small architecture studio..." /></Field><Button data-testid="create-project-submit" disabled={busy || !name.trim() || !projectSlug.trim() || !idea.trim()} onClick={startProject} className="h-11 rounded-xl bg-slate-950 px-5">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Create project</Button></div>}{step === "brief" && brief && <div className="space-y-5"><div><h2 className="text-xl font-semibold text-slate-950">Review the Brief</h2><p className="mt-1 text-sm text-slate-500">Edit the structured brief before it becomes a SiteSpec.</p></div><Field label="Audience"><Textarea data-testid="brief-audience" value={brief.audience} rows={3} onChange={(event) => setBrief({ ...brief, audience: event.target.value })} /></Field><Field label="Value proposition"><Textarea data-testid="brief-value" value={brief.valueProposition} rows={3} onChange={(event) => setBrief({ ...brief, valueProposition: event.target.value })} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field label="Tone"><SelectField value={brief.tone} onChange={(value) => setBrief({ ...brief, tone: value })} options={["calm", "bold", "editorial", "technical", "warm"]} /></Field><Field label="Primary goal"><SelectField value={brief.primaryGoal} onChange={(value) => setBrief({ ...brief, primaryGoal: value })} options={["book", "buy", "contact", "learn", "subscribe"]} /></Field></div><Button data-testid="confirm-brief" disabled={busy} onClick={saveBrief} className="h-11 rounded-xl bg-slate-950 px-5">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Confirm Brief</Button></div>}{step === "spec" && siteSpec && <div className="space-y-5"><div><h2 className="text-xl font-semibold text-slate-950">Confirm the SiteSpec</h2><p className="mt-1 text-sm text-slate-500">The canonical SiteSpec is validated by the server before Build.</p></div><div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"><div className="font-semibold">{siteSpec.projectName}</div><div className="mt-1 text-slate-500">{siteSpec.pages?.length ?? 0} page(s) · {siteSpec.pages?.reduce((total: number, page: any) => total + page.sections.length, 0) ?? 0} section(s)</div></div><Button data-testid="confirm-sitespec-build" disabled={busy} onClick={buildDraft} className="h-11 rounded-xl bg-slate-950 px-5">{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Confirm SiteSpec & Build Draft</Button></div>}</div></div>;

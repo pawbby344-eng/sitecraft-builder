@@ -87,3 +87,17 @@ After the clean build and server restart, the authenticated browser reload resto
 Full UI-only flow completed: authenticated session → Create Project → IDEA → manual Brief edit → Confirm Brief → Confirm SiteSpec & Build Draft → Visual Editor → block-scoped AI Proposal → Apply → lock → Draft Preview desktop/mobile → Publish → Draft edit → public unchanged → Re-publish → public updated → Unpublish → public `Not found`.
 
 After closing the browser and restarting the dev server, a fresh browser load restored the authenticated project, page, saved Draft revision 4 and headline. `pnpm test` passed with 8 files and 33 tests; `pnpm check` passed. The first build attempt exited 143 while computing gzip under high memory pressure; after closing the browser and stopping watch processes, the ordinary `pnpm build` passed: Vite built in 8.91s and esbuild completed in 14ms. No build configuration was changed.
+
+## Pre-Migration Hardening browser audit
+
+2026-08-25: authenticated Workspace loaded at `/`; existing project `Stage 7 Atelier` visible; `Create new project` control visible; Draft revision 4 loaded; AI Local Edit, Preview and Publish controls visible. No browser operation was used to call DB or router directly.
+
+Pre-Migration Hardening browser E2E continuation: in a non-empty authenticated Workspace, `Create new project` opened the production ProjectBuilder. A new project name, unique slug and IDEA were entered through visible UI controls successfully.
+
+Pre-Migration Hardening browser E2E: Create Project succeeded through the production UI; the existing architect handler opened `Review the Brief` with editable audience/value proposition/tone/primary goal and `Confirm Brief`. No direct DB/router call was used.
+
+Pre-Migration Hardening browser E2E: Brief was edited manually in the production UI and `Confirm Brief` submitted successfully; the existing architect flow proceeded to SiteSpec generation.
+
+Pre-Migration Hardening browser E2E: Brief was edited manually in the production UI and Confirm Brief submitted successfully; the existing architect flow proceeded to SiteSpec generation.
+
+Pre-Migration Hardening browser blocker closure: after the renderer guard and editor-state reset, selecting Hardening Atelier 2026 no longer throws ZodError. The UI shows Select a page and Draft revision 1, an empty canvas message, and no blocks from Stage 7 Atelier.

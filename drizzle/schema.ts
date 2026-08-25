@@ -1,4 +1,5 @@
 import { int, json, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, uniqueIndex, index } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -138,11 +139,13 @@ export const scopeLocks = mysqlTable("scopeLocks", {
   projectId: int("projectId").notNull().references(() => projects.id, { onDelete: "cascade" }),
   scopeType: mysqlEnum("scopeType", ["block", "section", "theme"]).notNull(),
   scopeId: int("scopeId"),
+  scopeIdentity: int("scopeIdentity").generatedAlwaysAs(sql.raw("coalesce(`scopeLocks`.`scopeId`, 0)")),
   locked: boolean("locked").notNull().default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   projectScopeIdx: index("scope_locks_project_scope_idx").on(table.projectId, table.scopeType, table.scopeId),
+  projectScopeIdentityUnique: uniqueIndex("scope_locks_project_scope_identity_unique").on(table.projectId, table.scopeType, table.scopeIdentity),
 }));
 
 export type ProjectIdea = typeof projectIdeas.$inferSelect;

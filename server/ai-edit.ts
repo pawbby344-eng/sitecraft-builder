@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { aiProposals, pageBlocks, pages, projects, scopeLocks } from "../drizzle/schema";
 import { validatePageBlockHierarchy } from "../shared/page-blocks/validator";
 import { blockPropsByType, themeSchema } from "../shared/site-engine/schemas";
@@ -197,9 +197,7 @@ export async function setScopeLock(ownerId: number, rawInput: unknown) {
   const context = await loadContext(ownerId, input.projectId);
   validateScope(context, input.scopeType === "theme" ? "theme" : input.scopeType, input.scopeType === "theme" ? null : input.scopeId);
   const db = await requiredDb();
-  const existing = await db.select({ id: scopeLocks.id }).from(scopeLocks).where(and(eq(scopeLocks.projectId, input.projectId), eq(scopeLocks.scopeType, input.scopeType), input.scopeId === null ? isNull(scopeLocks.scopeId) : eq(scopeLocks.scopeId, input.scopeId))).limit(1);
-  if (existing[0]) await db.update(scopeLocks).set({ locked: input.locked }).where(eq(scopeLocks.id, existing[0].id));
-  else await db.insert(scopeLocks).values({ projectId: input.projectId, scopeType: input.scopeType, scopeId: input.scopeId, locked: input.locked });
+  await db.insert(scopeLocks).values({ projectId: input.projectId, scopeType: input.scopeType, scopeId: input.scopeId, locked: input.locked }).onDuplicateKeyUpdate({ set: { locked: input.locked, updatedAt: new Date() } });
   return { locked: input.locked };
 }
 

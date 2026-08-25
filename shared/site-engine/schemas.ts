@@ -3,11 +3,26 @@ import { z } from "zod";
 const safeColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color must be a hex value");
 const tokenName = z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/);
 
+export const fontFamilyTokenSchema = z.enum(["Inter", "system", "sans", "serif", "mono"]);
+
+const supportedImageHosts = new Set(["images.unsplash.com", "images.pexels.com"]);
+const supportedRasterPath = /\.(?:avif|gif|jpe?g|png|webp)$/i;
+
+export const imageSourceSchema = z.string().max(2048).refine((value) => {
+  try {
+    const url = new URL(value);
+    if (!["https:", "http:"].includes(url.protocol) || !url.hostname || url.username || url.password) return false;
+    return supportedImageHosts.has(url.hostname.toLowerCase()) || supportedRasterPath.test(url.pathname);
+  } catch {
+    return false;
+  }
+}, "Image source must be an allowed HTTP(S) raster image source");
+
 export const projectSlugSchema = z.string().min(3).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase kebab-case");
 
 export const themeSchema = z.object({
   typography: z.object({
-    fontFamily: z.string().min(1).max(120),
+    fontFamily: fontFamilyTokenSchema,
     headingSize: z.number().int().positive().max(128),
     bodySize: z.number().int().positive().max(48),
     headingWeight: z.number().int().min(100).max(900),
@@ -52,7 +67,7 @@ export const textPropsSchema = z.object({
 }).strict();
 
 export const imagePropsSchema = z.object({
-  src: z.string().url().max(2048),
+  src: imageSourceSchema,
   alt: z.string().min(1).max(500),
   fit: z.enum(["cover", "contain"]),
   radiusToken: tokenName,

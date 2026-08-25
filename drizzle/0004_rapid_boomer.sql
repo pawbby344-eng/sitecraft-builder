@@ -1,0 +1,2 @@
+ALTER TABLE `scopeLocks` ADD `scopeIdentity` int GENERATED ALWAYS AS (coalesce(`scopeLocks`.`scopeId`, 0)) VIRTUAL;--> statement-breakpoint
+ALTER TABLE `scopeLocks` ADD CONSTRAINT `scope_locks_project_scope_identity_unique` UNIQUE(`projectId`,`scopeType`,`scopeIdentity`);

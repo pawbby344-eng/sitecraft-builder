@@ -172,7 +172,7 @@ export async function reorderBlocks(ownerId: number, input: z.infer<typeof reord
     const project = projectRows[0];
     if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
     assertExpectedRevision(project.draftRevision, input.expectedRevision);
-    const current = normalizeBlockRows(await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId)) as BlockRow[]);
+    const current = normalizeBlockRows((await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId))) as BlockRow[]);
     const ids = new Set(current.map((row: BlockRow) => row.id));
     if (input.blocks.length !== current.length || input.blocks.some((row) => !ids.has(row.id))) throw new TRPCError({ code: "BAD_REQUEST", message: "Reorder must include exactly this page's blocks" });
     const validated = validateDraftBlockSet(input.blocks as BlockRow[]);

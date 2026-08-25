@@ -155,13 +155,34 @@ describe.sequential("Stage 6 Responsive Preview and Publish", () => {
     await db.update(pageBlocks).set({ props: broken[0].props as any }).where(eq(pageBlocks.id, textBlockId));
     const otherCaller = caller(other);
     await expect(otherCaller.publish.publish({ projectId, expectedRevision: before.project.projectDraftRevision })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(otherCaller.publish.unpublish({ projectId })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(otherCaller.publish.unpublish({ projectId, expectedPublishedRevisionId: statusBefore.publishedRevisionId! })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("guards stale Unpublish from removing a concurrent Re-publish pointer", async () => {
+    const c = caller(owner);
+    const before = await c.publish.status({ projectId });
+    const stalePointer = before.publishedRevisionId!;
+    const draft = await c.architect.state({ projectId });
+    const [republishResult, staleUnpublishResult] = await Promise.allSettled([
+      c.publish.publish({ projectId, expectedRevision: draft.project.projectDraftRevision }),
+      c.publish.unpublish({ projectId, expectedPublishedRevisionId: stalePointer }),
+    ]);
+    expect(republishResult.status).toBe("fulfilled");
+    const republishedId = (republishResult as PromiseFulfilledResult<{ publishedRevisionId: number }>).value.publishedRevisionId;
+    if (staleUnpublishResult.status === "rejected") expect(staleUnpublishResult.reason).toMatchObject({ code: "CONFLICT" });
+    const after = await c.publish.status({ projectId });
+    expect(after.isPublished).toBe(true);
+    expect(after.publishedRevisionId).toBe(republishedId);
+    await expect(c.publish.unpublish({ projectId, expectedPublishedRevisionId: stalePointer })).rejects.toMatchObject({ code: "CONFLICT" });
+    const guarded = await c.publish.status({ projectId });
+    expect(guarded.publishedRevisionId).toBe(republishedId);
   });
 
   it("unpublishes to public 404 without changing Draft and guards unsupported schema", async () => {
     const c = caller(owner);
     const before = await c.architect.state({ projectId });
-    await c.publish.unpublish({ projectId });
+    const publishedStatus = await c.publish.status({ projectId });
+    await c.publish.unpublish({ projectId, expectedPublishedRevisionId: publishedStatus.publishedRevisionId! });
     const after = await c.architect.state({ projectId });
     expect(after.project.projectDraftRevision).toBe(before.project.projectDraftRevision);
     await expect(getPublicSnapshot({ projectSlug: (await c.publish.status({ projectId })).projectSlug })).rejects.toMatchObject({ code: "NOT_FOUND" });

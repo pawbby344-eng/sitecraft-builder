@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { pageBlocks, pages, projects, publishedRevisions } from "../drizzle/schema";
 import { projectSlugSchema, themeSchema } from "../shared/site-engine/schemas";
-import { publishedSnapshotSchema, publishInputSchema, publicPageInputSchema, supportedPublishedSchemaVersion } from "../shared/site-engine/publish";
+import { publishedSnapshotSchema, publishInputSchema, publicPageInputSchema, supportedPublishedSchemaVersion, unpublishInputSchema } from "../shared/site-engine/publish";
 import { getDb } from "./db";
 import { assertExpectedRevision, validateDraftBlockSet } from "./site-engine";
 
@@ -65,11 +65,21 @@ export async function publishDraft(ownerId: number, rawInput: unknown) {
   });
 }
 
-export async function unpublishProject(ownerId: number, projectId: number) {
+export async function unpublishProject(ownerId: number, rawInput: unknown) {
+  const input = unpublishInputSchema.parse(rawInput);
   const db = await requiredDb();
   return db.transaction(async (tx: any) => {
-    const updated = await tx.update(projects).set({ publishedRevisionId: null, isPublished: false }).where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId)));
-    if (updated[0]?.affectedRows !== 1) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+    const updated = await tx.update(projects).set({ publishedRevisionId: null, isPublished: false }).where(and(
+      eq(projects.id, input.projectId),
+      eq(projects.ownerId, ownerId),
+      eq(projects.publishedRevisionId, input.expectedPublishedRevisionId),
+      eq(projects.isPublished, true),
+    ));
+    if (updated[0]?.affectedRows !== 1) {
+      const owned = await tx.select({ id: projects.id }).from(projects).where(and(eq(projects.id, input.projectId), eq(projects.ownerId, ownerId))).limit(1);
+      if (!owned[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      throw new TRPCError({ code: "CONFLICT", message: "Published revision changed" });
+    }
     return { unpublished: true };
   });
 }

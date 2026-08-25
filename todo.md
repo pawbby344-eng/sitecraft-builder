@@ -264,3 +264,35 @@
 - [x] Сделать migration 0002 portable для fresh MariaDB/compatible MySQL migration runner, разделив ALTER TABLE и CREATE INDEX statement-breakpoint’ом; затем повторить recovery gates — PASS
 
 - [x] Закрыть MariaDB JSON serialization compatibility в ai-edit context и integration fixtures, затем повторить fresh recovery gates — PASS
+
+## Final Zero-Trust Self-Audit — baseline 0509a8f0
+
+- [ ] Проверить соответствие финального checkpoint 0509a8f0 и recovery archive
+- [ ] Проверить archive integrity, checksum manifest, секреты и отсутствующие sandbox-only artifacts
+- [ ] Построить traceability plan → code → router → production UI → executable tests
+- [ ] Выполнить fresh-user production UI audit и зафиксировать UX/dead-end gaps
+- [ ] Повторно проверить state integrity, ownership, revision guards, locks, transactions и failure paths
+- [ ] Проверить AI abstraction, fallback transparency, public renderer security и renderer parity
+- [ ] Проверить migrations clean/upgrade, DB portability, production boot и Manus dependencies
+- [ ] Подготовить независимый zero-trust audit report с severity/status/evidence
+- [ ] Не менять код, архитектуру, данные и не начинать Stage 8
+
+## Pre-Migration Hardening Gate — baseline 0509a8f0
+
+- [ ] Ограничить image.src allowlist’ом поддерживаемых http/https image sources и добавить security regression tests
+- [ ] Ограничить theme/font/CSS-context values безопасной schema/token model и добавить injection regression tests
+- [ ] Защитить Unpublish atomic pointer identity от race с новым Publish и добавить concurrent regression test
+- [ ] Добавить additive migration для unique lock identity и safe concurrent lock handling с regression test
+- [ ] Устранить UX contradictions, сделать Create Project доступным при существующих проектах и убрать /home demo reachability
+- [ ] Добавить настоящий browser E2E для full flow, reload/logout-login и stale second-tab save
+- [ ] Выполнить populated migration regression на непустой базе через 0000→0003
+- [ ] Добавить final-integrated-plan.md или эквивалентную финальную architecture/release specification в recovery artifact
+- [ ] Запустить pnpm check, pnpm test, browser E2E и pnpm build
+- [ ] При полном PASS создать новый checkpoint и recovery archive; External Runtime Migration не начинать
+
+## Pre-Migration Hardening Gate — verified blocker closure
+
+- [x] Исправить syntax/transform blocker в server/site-engine.ts, не меняя поведение handlers
+- [x] Не рендерить strict PublishedSnapshot для pre-Build Draft без pages; сохранить UX выбора проекта
+- [ ] Повторно выполнить browser E2E после точечных исправлений и проверить отсутствие новых console errors
+- [x] Очищать локальный editor draft при переключении на проект без выбранной страницы, чтобы не показывать blocks другого проекта

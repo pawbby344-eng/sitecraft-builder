@@ -8,6 +8,11 @@ export const publishInputSchema = z.object({
   expectedRevision: z.number().int().positive(),
 }).strict();
 
+export const unpublishInputSchema = z.object({
+  projectId: z.number().int().positive(),
+  expectedPublishedRevisionId: z.number().int().positive(),
+}).strict();
+
 export const publicPageInputSchema = z.object({
   projectSlug: projectSlugSchema,
   pageSlug: z.string().min(1).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
