@@ -99,11 +99,16 @@ describe.sequential("Stage 6 Responsive Preview and Publish", () => {
     const about = await getPublicSnapshot({ projectSlug: published.projectSlug, pageSlug: "about" });
     const homeResponse = await fetch(`${publicBaseUrl}/site/${published.projectSlug}`);
     const aboutResponse = await fetch(`${publicBaseUrl}/site/${published.projectSlug}/about`);
+    const draftState = await c.architect.state({ projectId });
+    const draftSnapshot = { schemaVersion: "1" as const, project: { id: draftState.project.id, name: draftState.project.name, projectSlug: draftState.project.projectSlug }, theme: draftState.project.theme, pages: draftState.pages.map((page) => ({ id: page.id, name: page.name, pageSlug: page.pageSlug, purpose: page.purpose ?? null, isHome: page.isHome, blocks: draftState.blocks.filter((block) => block.pageId === page.id).map((block) => ({ id: block.id, pageId: block.pageId, parentBlockId: block.parentBlockId, type: block.type, sortOrder: block.sortOrder, props: block.props })) })) };
+    const draftPreviewHtml = renderSiteHtml(draftSnapshot, "home");
+    const publishedHomeHtml = await homeResponse.text();
+    expect(publishedHomeHtml).toBe(draftPreviewHtml);
     const missingResponse = await fetch(`${publicBaseUrl}/site/${published.projectSlug}/missing`);
     expect(homeResponse.status).toBe(200);
     expect(aboutResponse.status).toBe(200);
     expect(missingResponse.status).toBe(404);
-    expect(await homeResponse.text()).toContain('data-renderer="sitecraft"');
+    expect(publishedHomeHtml).toContain('data-renderer="sitecraft"');
     expect(await aboutResponse.text()).toContain("About content");
     expect(home.schemaVersion).toBe("1");
     expect(home.pages.find((page) => page.isHome)?.pageSlug).toBe("home");

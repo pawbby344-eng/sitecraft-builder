@@ -203,3 +203,35 @@
 
 - [x] Добавить integration test, что Draft Preview использует текущий Draft через общий renderer и viewport switch не меняет Draft/published state
 - [x] Добавить HTTP/Express integration tests для `/site/:projectSlug` и `/site/:projectSlug/:pageSlug`, включая 404 и snapshot-only content
+
+## Stage 7 Final QA / Release Gate
+
+- [ ] Выполнить полный production-path E2E flow от auth до Unpublish/404
+- [ ] Проверить новую authenticated session и persistence/reload всех состояний
+- [x] Повторно проверить ownership, conflicts, locks, strict validation и atomicity — PASS по полному Vitest suite
+- [x] Проверить Draft/public isolation, immutable revisions и schemaVersion guard — PASS
+- [x] Проверить Draft Preview и Published renderer parity — exact HTML parity PASS
+- [ ] Выполнить desktop/mobile UI QA и browser console/overflow checks
+- [x] Проверить migrations на чистой test DB и smoke flow, если среда позволяет — UNVERIFIED: отдельная DB environment сейчас отсутствует; предыдущая Stage 3 clean-room verification сохранена
+- [x] Запустить pnpm check, pnpm test и pnpm build — PASS после retry
+- [x] Обновить recovery package финальным состоянием Stage 7 QA evidence и blocker status
+- [ ] Создать финальный Stage 7 checkpoint только после PASS
+- [ ] Зафиксировать Stage 7 release verdict и остановиться без Stage 8
+
+## Stage 7 QA evidence
+
+- [ ] Full E2E
+- [ ] Security / ownership
+- [ ] State integrity
+- [ ] Renderer parity
+- [ ] Persistence / reload
+- [ ] Responsive/UI QA
+- [ ] Check / Tests / Build
+- [ ] Recovery package
+- [ ] Final release verdict
+
+## Stage 7 scope guard
+
+- [x] Не добавлять новые функции
+- [x] Не изменять Stage 1–6 без конкретного regression/blocker
+- [x] Не начинать Stage 8
