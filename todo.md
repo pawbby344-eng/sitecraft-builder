@@ -350,3 +350,19 @@
 - [x] Добавить structured error logging для critical server errors/mutations без secrets и raw user content
 - [x] Добавить regression tests на request correlation и redacted structured error fields
 - [x] Выполнить pnpm check, pnpm test, pnpm test:e2e и pnpm build; остановиться после PASS
+
+## Mobile responsive pass
+
+- [ ] Проверить Workspace, builder, editor properties, AI/locks, preview и public route на мобильных viewport
+- [ ] Исправить только подтверждённые mobile overflow, touch, focus и layout проблемы
+- [ ] Повторно проверить мобильные сценарии и доступность кнопок/форм
+- [ ] Запустить responsive browser checks, pnpm check, pnpm test и pnpm build
+
+
+## Final Mobile Responsive Pass
+
+- [x] Проверить populated mobile editor на 390px: sections, blocks, перенос длинного текста и отсутствие горизонтального clipping
+- [x] Проверить populated mobile properties на 390px: поля, AI Local Edit, Lock и Publish остаются доступными
+- [x] Подтвердить mobile pane switching Projects → Editor → Properties через browser regression
+- [x] Добавить mobile responsive regression test для 390px и проверки отсутствия горизонтального overflow
+- [x] Запустить mobile E2E, pnpm check, pnpm test и обычный pnpm build
