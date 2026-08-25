@@ -11,9 +11,9 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000",
     storageState: process.env.E2E_STORAGE_STATE,
     headless: true,
-    executablePath: process.env.E2E_CHROMIUM_PATH ?? "/usr/bin/chromium",
+    launchOptions: { executablePath: process.env.E2E_CHROMIUM_PATH ?? "/usr/bin/chromium" },
     viewport: { width: 1440, height: 1000 },
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], launchOptions: { executablePath: process.env.E2E_CHROMIUM_PATH ?? "/usr/bin/chromium" } } }],
 });

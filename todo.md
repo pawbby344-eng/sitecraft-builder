@@ -279,20 +279,29 @@
 
 ## Pre-Migration Hardening Gate — baseline 0509a8f0
 
-- [ ] Ограничить image.src allowlist’ом поддерживаемых http/https image sources и добавить security regression tests
-- [ ] Ограничить theme/font/CSS-context values безопасной schema/token model и добавить injection regression tests
-- [ ] Защитить Unpublish atomic pointer identity от race с новым Publish и добавить concurrent regression test
-- [ ] Добавить additive migration для unique lock identity и safe concurrent lock handling с regression test
-- [ ] Устранить UX contradictions, сделать Create Project доступным при существующих проектах и убрать /home demo reachability
-- [ ] Добавить настоящий browser E2E для full flow, reload/logout-login и stale second-tab save
-- [ ] Выполнить populated migration regression на непустой базе через 0000→0003
-- [ ] Добавить final-integrated-plan.md или эквивалентную финальную architecture/release specification в recovery artifact
-- [ ] Запустить pnpm check, pnpm test, browser E2E и pnpm build
-- [ ] При полном PASS создать новый checkpoint и recovery archive; External Runtime Migration не начинать
+- [x] Ограничить image.src allowlist’ом поддерживаемых http/https image sources и добавить security regression tests
+- [x] Ограничить theme/font/CSS-context values безопасной schema/token model и добавить injection regression tests
+- [x] Защитить Unpublish atomic pointer identity от race с новым Publish и добавить concurrent regression test
+- [x] Добавить additive migration для unique lock identity и safe concurrent lock handling с regression test
+- [x] Устранить UX contradictions, сделать Create Project доступным при существующих проектах и убрать /home demo reachability
+- [x] Добавить настоящий browser E2E для full flow, reload/logout-login и stale second-tab save
+- [x] Выполнить populated migration regression на непустой базе через 0000→0003
+- [x] Добавить final-integrated-plan.md или эквивалентную финальную architecture/release specification в recovery artifact
+- [x] Запустить pnpm check, pnpm test, browser E2E и pnpm build
+- [x] При полном PASS создать новый checkpoint и recovery archive; External Runtime Migration не начинать
 
 ## Pre-Migration Hardening Gate — verified blocker closure
 
 - [x] Исправить syntax/transform blocker в server/site-engine.ts, не меняя поведение handlers
 - [x] Не рендерить strict PublishedSnapshot для pre-Build Draft без pages; сохранить UX выбора проекта
-- [ ] Повторно выполнить browser E2E после точечных исправлений и проверить отсутствие новых console errors
+- [x] Повторно выполнить browser E2E после точечных исправлений и проверить отсутствие новых console errors
 - [x] Очищать локальный editor draft при переключении на проект без выбранной страницы, чтобы не показывать blocks другого проекта
+
+## Remaining acceptance gaps — user-directed closure
+
+- [x] Убрать skip из обязательного Playwright release flow через воспроизводимый authenticated storageState без auth bypass
+- [x] Реально выполнить browser E2E: create/build/editor/save/reload/AI/locks/preview/publish/re-publish/unpublish, existing-project create, pre-Build isolation, new session и stale second-tab conflict
+- [x] Выполнить populated migration regression на disposable DB через раннюю migration state → валидные старые fixtures → 0003 upgrade → production read paths
+- [x] После обоих gap PASS выполнить check/test/test:e2e/build, создать финальный hardening checkpoint и recovery archive с checksum
+- [x] Устранить race post-Build selection: после Create Project Workspace должен открыть именно созданный projectId, а не первый старый проект
+- [x] Заблокировать Unpublish на время refetch published status после Publish/Re-publish, чтобы не отправлять stale pointer identity
