@@ -305,3 +305,39 @@
 - [x] После обоих gap PASS выполнить check/test/test:e2e/build, создать финальный hardening checkpoint и recovery archive с checksum
 - [x] Устранить race post-Build selection: после Create Project Workspace должен открыть именно созданный projectId, а не первый старый проект
 - [x] Заблокировать Unpublish на время refetch published status после Publish/Re-publish, чтобы не отправлять stale pointer identity
+
+## Recovery DB freshness — checkpoint eaed1395
+
+- [x] Снять source row counts и ключевые IDs для девяти recovery tables
+- [x] Сравнить source с backup внутри sitecraft-mvp-final-eaed1395.tar.gz
+- [x] При расхождении выполнить свежий безопасный table-by-table/chunked/application-level export
+- [x] Пересобрать sitecraft-mvp-final-eaed1395-r1.tar.gz и вернуть DB freshness verdict
+
+## Recovery r1 restore proof — final pre-migration gate
+
+- [x] Создать disposable fresh DB и применить migrations 0000→0004
+- [x] Импортировать существующий db/sitecraft-fresh-db.json без создания новых проектных данных
+- [x] Проверить counts, IDs, foreign keys, parentBlockId, ownership, revisions, Brief↔SiteSpec, proposals, locks и published snapshots
+- [x] Выполнить production read/save/AI Proposal/Preview/public route smoke на восстановленном существующем проекте
+- [x] Сохранить reproducible importer/restore command в recovery archive/runbook и вернуть recovery proof verdict
+
+## PRA production audit
+
+- [x] Распаковать и инвентаризировать PRA-001–PRA-017
+- [x] Выполнить PRA-001 Architecture Review
+- [x] Выполнить PRA-002 Security Review
+- [x] Выполнить PRA-003 Authentication & Authorization Review
+- [x] Выполнить PRA-004 Database Review
+- [x] Выполнить PRA-005 API Review
+- [x] Выполнить PRA-006 Frontend Review
+- [x] Выполнить PRA-007 React Review
+- [x] Выполнить PRA-008 TypeScript Review
+- [x] Выполнить PRA-009 Observability Review
+- [x] Выполнить PRA-010 Error Handling Review
+- [x] Выполнить PRA-011 Performance Review
+- [x] Выполнить PRA-012 Testing Review
+- [x] Выполнить PRA-013 DevOps & Infrastructure Review
+- [x] Выполнить PRA-014 Code Quality Review
+- [x] Выполнить PRA-015 Release Readiness Review
+- [x] Выполнить PRA-016 Design Patterns Review
+- [x] Собрать PRA-017 Final Production Report без повторного анализа исходного кода
