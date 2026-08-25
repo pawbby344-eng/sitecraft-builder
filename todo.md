@@ -158,3 +158,28 @@
 - [x] Выполнить обычный pnpm build без специальных production-флагов
 - [x] При повторном exit 143 зафиксировать последнюю строку, exit code, память, процессы и этап Vite — не применялось: обычный build завершился с exit code 0
 - [x] Повторно подтвердить pnpm check, pnpm test и Stage 4 integration acceptance
+
+## Текущий этап: AI Local Edit + Locks
+
+- [x] Добавить typed selected-scope и proposal schemas для block/section/page/theme
+- [x] Реализовать manual deterministic AIProvider proposal path без внешнего AI
+- [x] Сохранять proposal с исходной revision/fingerprint и concrete proposed diff
+- [x] Добавить серверный Validate → Apply flow без прямой записи AI в Draft
+- [x] Повторно проверять ownership, revision, locks, strict schemas и hierarchy перед Apply
+- [x] Сделать Apply атомарным, одноразовым и увеличивающим projectDraftRevision
+- [x] Реализовать Reject без изменения Draft
+- [x] Реализовать block, section и theme locks с серверной защитой
+- [x] Добавить rollback/atomicity для невалидного Apply
+- [x] Добавить UI Ask AI, command, generating/error, diff, Apply, Reject и Lock/Unlock в существующий editor
+- [x] Добавить Stage 5 integration/regression tests, включая reload persistence
+- [x] Запустить pnpm check, pnpm test и pnpm build; остановиться при FAIL
+
+## Stage 5 acceptance gap closure
+
+- [x] Ограничить AIProvider context только выбранным scope и разрешёнными project-level constraints
+- [x] Добавить настоящий before/after diff proposed changes в существующий Workspace editor
+- [x] Добавить отдельный repeated Apply после успешного Apply с проверкой CONFLICT и отсутствия дублей
+- [x] Добавить отдельный cross-owner Apply rejection с проверкой неизменного Draft
+- [x] Повторно запустить pnpm check, полный pnpm test и pnpm build перед Stage 5 checkpoint
+
+- [x] Усилить repeated-Apply test: после rejected повторного Apply проверить точный набор pageBlocks.id в reload и отсутствие дублей в БД

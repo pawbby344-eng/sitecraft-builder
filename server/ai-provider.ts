@@ -1,9 +1,11 @@
 import { briefSchema, siteSpecSchema, type Brief, type SiteSpec } from "../shared/site-engine/architect";
-import { themeSchema } from "../shared/site-engine/schemas";
+import { themeSchema, blockPropsByType } from "../shared/site-engine/schemas";
+import { proposalSchema, type EditProposal, type EditScopeType } from "../shared/site-engine/ai-edit";
 
 export type AIProvider = {
   generateBrief(inputText: string, projectName: string): Promise<Brief>;
   generateSiteSpec(input: { idea: string; brief: Brief; projectName: string; projectSlug: string; sourceBriefFingerprint: string }): Promise<SiteSpec>;
+  proposeEdit(input: { scopeType: EditScopeType; scopeId: number | null; instruction: string; baseDraftRevision: number; baseFingerprint: string; context: { blocks: Array<{ id: number; pageId: number; parentBlockId: number | null; type: "section" | "text" | "image" | "button"; props: unknown }>; theme: unknown } }): Promise<EditProposal>;
 };
 
 export const defaultTheme = themeSchema.parse({
@@ -33,6 +35,16 @@ export const manualAIProvider: AIProvider = {
       pages: [{ name: "Главная", slug: "home", purpose: "Познакомить посетителя с предложением и привести к целевому действию" }],
     };
     return briefSchema.parse(brief);
+  },
+
+  async proposeEdit({ scopeType, scopeId, instruction, baseDraftRevision, baseFingerprint, context }) {
+    const target = scopeId === null ? undefined : context.blocks.find((block) => block.id === scopeId);
+    const changes = scopeType === "theme"
+      ? [{ kind: "theme" as const, props: { ...defaultTheme, colors: { ...defaultTheme.colors, primary: "#334155" } } }]
+      : target
+        ? [{ kind: "blockProps" as const, pageId: target.pageId, blockId: target.id, blockType: target.type, props: proposeBlockProps(target.type, target.props, instruction) }]
+        : context.blocks.filter((block) => scopeType === "page" || block.parentBlockId === scopeId).slice(0, 1).map((block) => ({ kind: "blockProps" as const, pageId: block.pageId, blockId: block.id, blockType: block.type, props: proposeBlockProps(block.type, block.props, instruction) }));
+    return proposalSchema.parse({ schemaVersion: "1", scopeType, scopeId, baseDraftRevision, baseFingerprint, instruction, summary: `Manual proposal for ${scopeType}`, changes });
   },
 
   async generateSiteSpec({ idea, brief, projectName, projectSlug, sourceBriefFingerprint }) {
@@ -72,6 +84,14 @@ export const manualAIProvider: AIProvider = {
     return siteSpecSchema.parse(spec);
   },
 };
+
+function proposeBlockProps(type: "section" | "text" | "image" | "button", rawProps: unknown, instruction: string) {
+  const props = blockPropsByType[type].parse(rawProps) as Record<string, unknown>;
+  if (type === "text") return { ...props, content: `${String(props.content)} — ${instruction.slice(0, 80)}` };
+  if (type === "button") return { ...props, label: instruction.slice(0, 120) || String(props.label) };
+  if (type === "section") return { ...props, align: props.align === "center" ? "left" : "center" };
+  return props;
+}
 
 export function getAIProvider(): AIProvider {
   return manualAIProvider;

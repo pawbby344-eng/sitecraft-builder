@@ -7,6 +7,8 @@ import { applySiteSpecSchema, briefIdSchema, createProjectStage3Schema, projectO
 import { createBlock, replaceAllBlocks, reorderBlocks, updateBlock } from "./site-engine";
 import { applySiteSpec, confirmBrief, confirmSiteSpec, createBrief, createProject, generateSiteSpec, getArchitectState, saveIdea, updateBrief } from "./site-architect";
 import { listWorkspaceProjects } from "./workspace";
+import { applyProposal, createProposal, getAiEditState, rejectProposal, setScopeLock } from "./ai-edit";
+import { applyProposalInputSchema, createProposalInputSchema, lockInputSchema, proposalIdInputSchema } from "../shared/site-engine/ai-edit";
 
 export const appRouter = router({
   system: systemRouter,
@@ -21,6 +23,14 @@ export const appRouter = router({
 
   workspace: router({
     projects: protectedProcedure.query(({ ctx }) => listWorkspaceProjects(ctx.user.id)),
+  }),
+
+  aiEdit: router({
+    state: protectedProcedure.input(projectOnlySchema).query(({ ctx, input }) => getAiEditState(ctx.user.id, input.projectId)),
+    createProposal: protectedProcedure.input(createProposalInputSchema).mutation(({ ctx, input }) => createProposal(ctx.user.id, input)),
+    applyProposal: protectedProcedure.input(applyProposalInputSchema).mutation(({ ctx, input }) => applyProposal(ctx.user.id, input)),
+    rejectProposal: protectedProcedure.input(proposalIdInputSchema).mutation(({ ctx, input }) => rejectProposal(ctx.user.id, input)),
+    setLock: protectedProcedure.input(lockInputSchema).mutation(({ ctx, input }) => setScopeLock(ctx.user.id, input)),
   }),
 
   siteBlocks: router({

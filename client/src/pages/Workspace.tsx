@@ -22,6 +22,8 @@ import {
   PanelRight,
   Save,
   Sparkles,
+  Lock,
+  Unlock,
   SquareStack,
   Type,
 } from "lucide-react";
@@ -99,6 +101,10 @@ export default function Workspace() {
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [aiScopeType, setAiScopeType] = useState<"block" | "section" | "page" | "theme">("block");
+  const [aiInstruction, setAiInstruction] = useState("");
+  const [activeProposal, setActiveProposal] = useState<{ id: number; proposal: { summary: string; changes: Array<{ kind: string; blockId?: number; props: unknown }> } } | null>(null);
+  const [aiMessage, setAiMessage] = useState("");
 
   const projects = (projectsQuery.data ?? []) as WorkspaceProject[];
   useEffect(() => {
@@ -108,6 +114,7 @@ export default function Workspace() {
 
   const stateInput = useMemo(() => ({ projectId: selectedProjectId ?? 0 }), [selectedProjectId]);
   const stateQuery = trpc.architect.state.useQuery(stateInput, { enabled: selectedProjectId !== null });
+  const aiStateQuery = trpc.aiEdit.state.useQuery(stateInput, { enabled: selectedProjectId !== null });
   const state = stateQuery.data as ArchitectState | undefined;
   const pages = state?.pages ?? [];
 
@@ -142,6 +149,42 @@ export default function Workspace() {
   const reorderMutation = trpc.siteBlocks.reorder.useMutation();
   const replaceAllMutation = trpc.siteBlocks.replaceAll.useMutation();
   const isSaving = updateMutation.isPending || reorderMutation.isPending || replaceAllMutation.isPending;
+  const proposalMutation = trpc.aiEdit.createProposal.useMutation();
+  const applyProposalMutation = trpc.aiEdit.applyProposal.useMutation();
+  const rejectProposalMutation = trpc.aiEdit.rejectProposal.useMutation();
+  const lockMutation = trpc.aiEdit.setLock.useMutation();
+  const aiBusy = proposalMutation.isPending || applyProposalMutation.isPending || rejectProposalMutation.isPending;
+  const effectiveScopeId = aiScopeType === "theme" ? null : aiScopeType === "page" ? selectedPageId : selectedBlockId;
+  const lockAvailable = aiScopeType !== "page";
+  const activeLock = (aiStateQuery.data?.locks ?? []).find((lock) => lock.scopeType === aiScopeType && (lock.scopeId ?? null) === (effectiveScopeId ?? null) && lock.locked);
+
+  const askAI = async () => {
+    if (!state || effectiveScopeId === undefined || effectiveScopeId === null && aiScopeType !== "theme" || !aiInstruction.trim() || aiBusy) return;
+    setAiMessage("");
+    try {
+      const result = await proposalMutation.mutateAsync({ projectId: state.project.id, scopeType: aiScopeType, scopeId: effectiveScopeId, instruction: aiInstruction.trim() });
+      setActiveProposal({ id: result.proposalId, proposal: result.proposal });
+      setAiMessage("Proposal ready for review");
+      await aiStateQuery.refetch();
+    } catch (error) {
+      setAiMessage(error instanceof Error ? error.message : "Could not create proposal");
+    }
+  };
+
+  const rejectAI = async () => {
+    if (!state || !activeProposal) return;
+    try { await rejectProposalMutation.mutateAsync({ projectId: state.project.id, proposalId: activeProposal.id }); setActiveProposal(null); setAiMessage("Proposal rejected"); await aiStateQuery.refetch(); } catch (error) { setAiMessage(error instanceof Error ? error.message : "Could not reject proposal"); }
+  };
+
+  const applyAI = async () => {
+    if (!state || !activeProposal || dirty) { setAiMessage(dirty ? "Save the Draft before applying a proposal" : "No proposal selected"); return; }
+    try { await applyProposalMutation.mutateAsync({ projectId: state.project.id, proposalId: activeProposal.id, expectedRevision: state.project.projectDraftRevision }); setActiveProposal(null); setAiMessage("Proposal applied"); await Promise.all([stateQuery.refetch(), projectsQuery.refetch(), aiStateQuery.refetch()]); } catch (error) { setAiMessage(error instanceof Error ? error.message : "Could not apply proposal"); }
+  };
+
+  const toggleLock = async () => {
+    if (!state || !lockAvailable || effectiveScopeId === undefined || effectiveScopeId === null && aiScopeType !== "theme") return;
+    try { await lockMutation.mutateAsync({ projectId: state.project.id, scopeType: aiScopeType as "block" | "section" | "theme", scopeId: aiScopeType === "theme" ? null : effectiveScopeId, locked: !activeLock }); await aiStateQuery.refetch(); setAiMessage(activeLock ? "Scope unlocked" : "Scope locked"); } catch (error) { setAiMessage(error instanceof Error ? error.message : "Could not update lock"); }
+  };
   const save = async () => {
     if (!state || selectedPageId === null || !dirty || isSaving) return;
     try {
@@ -240,7 +283,8 @@ export default function Workspace() {
         <aside className="min-h-0 overflow-y-auto border-l border-slate-200 bg-white p-5">
           <div className="mb-6 flex items-center justify-between"><div className="flex items-center gap-2"><PanelRight className="h-4 w-4 text-slate-400" /><span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Properties</span></div>{selectedBlock ? <Badge className={cn("rounded-full border px-2 py-0 text-[10px]", typeMeta[selectedBlock.type].accent)}>{typeMeta[selectedBlock.type].label}</Badge> : null}</div>
           {selectedBlock ? <PropertiesPanel block={selectedBlock} onChange={(patch) => updateBlock(selectedBlock.id, patch)} /> : <div className="flex min-h-[280px] flex-col items-center justify-center text-center"><MousePointer2 className="mb-3 h-7 w-7 text-slate-300" /><p className="text-sm font-medium text-slate-700">Select a block</p><p className="mt-1 text-xs leading-5 text-slate-400">Choose a Section, Text, Image or Button in the canvas to edit its properties.</p></div>}
-          {saveState !== "idle" && <div className={cn("mt-8 rounded-xl border p-3 text-xs", saveState === "error" ? "border-red-200 bg-red-50 text-red-700" : saveState === "saved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500")}><div className="flex items-start gap-2">{saveState === "error" ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : saveState === "saved" ? <Check className="mt-0.5 h-4 w-4 shrink-0" /> : <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />}<span>{saveMessage || "Saving draft…"}</span></div></div>}
+          {saveState !== "idle" && <div className={cn("mt-8 rounded-xl border p-3 text-xs", saveState === "error" ? "border-red-200 bg-red-50 text-red-700" : saveState === "saved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500")}><div className="flex items-start gap-2">{saveState === "error" ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : saveState === "saved" ? <Check className="mt-0.5 h-4 w-4" /> : <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />}<span>{saveMessage || "Saving draft…"}</span></div></div>}
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-500" /><span className="text-xs font-semibold text-slate-900">AI Local Edit</span></div><p className="mt-1 text-[11px] leading-4 text-slate-400">Proposal only. Draft changes after Apply.</p></div><Badge variant="secondary" className="rounded-full text-[10px]">{aiStateQuery.data?.proposals?.filter((item) => item.status === "pending").length ?? 0} pending</Badge></div><div className="mt-4 space-y-3"><Field label="Scope"><SelectField value={aiScopeType} onChange={(value) => setAiScopeType(value as typeof aiScopeType)} options={["block", "section", "page", "theme"]} /></Field><Field label="Command"><Textarea value={aiInstruction} rows={3} placeholder="Make the headline more direct" onChange={(event) => setAiInstruction(event.target.value)} /></Field><div className="flex gap-2"><Button onClick={askAI} disabled={aiBusy || !aiInstruction.trim() || effectiveScopeId === null && aiScopeType !== "theme"} className="h-9 flex-1 rounded-lg bg-slate-950 text-xs text-white hover:bg-slate-800">{proposalMutation.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-2 h-3.5 w-3.5" />}Ask AI</Button><Button onClick={toggleLock} disabled={!lockAvailable || lockMutation.isPending || effectiveScopeId === null && aiScopeType !== "theme"} variant="outline" className="h-9 rounded-lg px-3 text-xs">{activeLock ? <Unlock className="mr-1.5 h-3.5 w-3.5" /> : <Lock className="mr-1.5 h-3.5 w-3.5" />}{activeLock ? "Unlock" : "Lock"}</Button></div>{activeProposal && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3"><p className="text-xs font-semibold text-amber-950">{activeProposal.proposal.summary}</p><p className="mt-1 text-[11px] text-amber-800">{activeProposal.proposal.changes.length} validated change{activeProposal.proposal.changes.length === 1 ? "" : "s"}. Review before applying.</p><div className="mt-3 space-y-2">{activeProposal.proposal.changes.map((change, index) => { const before = change.kind === "theme" ? state?.project.theme : draftBlocks.find((block) => block.id === change.blockId)?.props; return <div key={`${change.kind}-${change.blockId ?? index}`} className="grid gap-2 text-[10px] sm:grid-cols-2"><div className="rounded-lg border border-amber-200 bg-white/70 p-2"><span className="font-semibold uppercase tracking-wider text-slate-400">Before</span><pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-slate-600">{JSON.stringify(before, null, 2)}</pre></div><div className="rounded-lg border border-amber-300 bg-amber-100/50 p-2"><span className="font-semibold uppercase tracking-wider text-amber-700">After</span><pre className="mt-1 max-h-20 overflow-auto whitespace-pre-wrap text-amber-950">{JSON.stringify(change.props, null, 2)}</pre></div></div>; })}</div><div className="mt-3 flex gap-2"><Button onClick={applyAI} disabled={aiBusy || dirty} className="h-8 flex-1 rounded-lg bg-amber-500 text-xs text-white hover:bg-amber-600">{applyProposalMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Apply</Button><Button onClick={rejectAI} disabled={aiBusy} variant="outline" className="h-8 rounded-lg bg-white text-xs">Reject</Button></div></div>}{aiMessage && <p className="text-[11px] leading-4 text-slate-500">{aiMessage}</p>}</div></div>
           <div className="mt-8 rounded-xl bg-slate-950 p-4 text-white"><div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-amber-300" /><span className="text-xs font-semibold">Editor guardrails</span></div><p className="mt-2 text-xs leading-5 text-slate-400">Changes stay inside the current Draft. AI Local Edit and publishing are intentionally not available in this stage.</p></div>
         </aside>
       </div>
