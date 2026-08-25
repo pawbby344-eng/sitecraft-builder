@@ -137,7 +137,8 @@ describe.sequential("Stage 5 AI Local Edit and Locks", () => {
     current = await c.architect.state({ projectId });
     const valid = await c.aiEdit.createProposal({ projectId, scopeType: "block", scopeId: textBlockId, instruction: "Prepare invalid props" });
     const stored = await db.select({ proposal: aiProposals.proposal }).from(aiProposals).where(eq(aiProposals.id, valid.proposalId)).limit(1);
-    const invalidProposal = { ...(stored[0].proposal as any), changes: [{ ...(stored[0].proposal as any).changes[0], props: { content: "", variant: "body", align: "left" } }] };
+    const storedProposal = typeof stored[0].proposal === "string" ? JSON.parse(stored[0].proposal) : stored[0].proposal;
+    const invalidProposal = { ...(storedProposal as any), changes: [{ ...(storedProposal as any).changes[0], props: { content: "", variant: "body", align: "left" } }] };
     await db.update(aiProposals).set({ proposal: invalidProposal }).where(eq(aiProposals.id, valid.proposalId));
     await expect(c.aiEdit.applyProposal({ projectId, proposalId: valid.proposalId, expectedRevision: current.project.projectDraftRevision })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     const after = await c.architect.state({ projectId });

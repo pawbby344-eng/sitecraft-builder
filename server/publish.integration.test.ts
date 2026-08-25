@@ -137,7 +137,8 @@ describe.sequential("Stage 6 Responsive Preview and Publish", () => {
     const nextPublic = await getPublicSnapshot({ projectSlug: published.project.projectSlug });
     expect((nextPublic.pages.flatMap((page) => page.blocks).find((block) => block.id === textBlockId)!.props as any).content).toBe("Draft changed after publish");
     const oldRevision = await db.select({ snapshot: publishedRevisions.snapshot }).from(publishedRevisions).where(eq(publishedRevisions.id, firstRevisionId)).limit(1);
-    expect((oldRevision[0].snapshot as any).pages.flatMap((page: any) => page.blocks).find((block: any) => block.id === textBlockId).props.content).toBe(oldContent);
+    const oldSnapshot = typeof oldRevision[0].snapshot === "string" ? JSON.parse(oldRevision[0].snapshot) : oldRevision[0].snapshot;
+    expect((oldSnapshot as any).pages.flatMap((page: any) => page.blocks).find((block: any) => block.id === textBlockId).props.content).toBe(oldContent);
   });
 
   it("rejects stale Publish, invalid Draft atomically and cross-owner operations", async () => {

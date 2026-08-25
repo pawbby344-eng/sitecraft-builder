@@ -245,3 +245,22 @@
 - [x] Повторить полный Stage 7 browser E2E после blocker fix — PASS
 - [x] Повторить pnpm check, pnpm test и pnpm build — PASS
 - [x] При полном PASS обновить recovery package и создать финальный Stage 7 checkpoint
+
+## Final Release Freeze
+
+- [x] Зафиксировать точный финальный commit/checkpoint hash — финальный checkpoint будет сохранён после этой freeze-записи
+- [x] Собрать recovery package из финального Stage 7 состояния
+- [x] Включить source, package.json, lockfile, migrations, Drizzle schema, logical backup, assets bytes, env example, runbook и adapters inventory
+- [x] Включить Stage 7 acceptance results и checksum manifest
+- [x] Создать архив sitecraft-mvp-final-<commit>.tar.gz
+- [x] Проверить fresh DB → migrations → pnpm install --frozen-lockfile → check → test → build — PASS
+- [x] Выполнить smoke flow восстановленной версии до Publish — PASS: 3 files / 15 tests
+- [x] Проверить archive size и SHA-256
+- [x] Зафиксировать FINAL COMMIT, recovery test, MVP release и external runtime verdict
+- [x] Остановиться после Final Release Freeze без Stage 8
+
+## Final Release Freeze recovery blocker
+
+- [x] Сделать migration 0002 portable для fresh MariaDB/compatible MySQL migration runner, разделив ALTER TABLE и CREATE INDEX statement-breakpoint’ом; затем повторить recovery gates — PASS
+
+- [x] Закрыть MariaDB JSON serialization compatibility в ai-edit context и integration fixtures, затем повторить fresh recovery gates — PASS

@@ -31,6 +31,15 @@ type BlockRow = {
   props: unknown;
 };
 
+function parseJsonColumn(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try { return JSON.parse(value); } catch { return value; }
+}
+
+function normalizeBlockRows(rows: BlockRow[]): BlockRow[] {
+  return rows.map((row) => ({ ...row, props: parseJsonColumn(row.props) }));
+}
+
 function databaseRequired() {
   return getDb().then((db) => {
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
@@ -107,7 +116,7 @@ export async function createBlock(ownerId: number, input: BlockMutation) {
     const project = projectRows[0];
     if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
     assertExpectedRevision(project.draftRevision, input.expectedRevision);
-    const existing = await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId));
+    const existing = normalizeBlockRows(await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId)) as BlockRow[]);
     const candidate = { id: -1, pageId: input.pageId, parentBlockId: input.parentBlockId, type: input.type, sortOrder: input.sortOrder, props: input.props } as BlockRow;
     validateDraftBlockSet([...existing, candidate]);
     await tx.insert(pageBlocks).values({ pageId: input.pageId, parentBlockId: input.parentBlockId, type: input.type, sortOrder: input.sortOrder, props: input.props as any });
@@ -126,7 +135,7 @@ export async function updateBlock(ownerId: number, input: BlockUpdate) {
     const project = projectRows[0];
     if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
     assertExpectedRevision(project.draftRevision, input.expectedRevision);
-    const existing = await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId));
+    const existing = normalizeBlockRows(await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId)) as BlockRow[]);
     const next = existing.map((row: BlockRow) => row.id === input.blockId ? { ...row, parentBlockId: input.parentBlockId, type: input.type, sortOrder: input.sortOrder, props: input.props } : row);
     validateDraftBlockSet(next);
     await tx.update(pageBlocks).set({ parentBlockId: input.parentBlockId, type: input.type, sortOrder: input.sortOrder, props: input.props as any })
@@ -163,7 +172,7 @@ export async function reorderBlocks(ownerId: number, input: z.infer<typeof reord
     const project = projectRows[0];
     if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
     assertExpectedRevision(project.draftRevision, input.expectedRevision);
-    const current = await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId));
+    const current = normalizeBlockRows(await tx.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks).where(eq(pageBlocks.pageId, input.pageId)) as BlockRow[]);
     const ids = new Set(current.map((row: BlockRow) => row.id));
     if (input.blocks.length !== current.length || input.blocks.some((row) => !ids.has(row.id))) throw new TRPCError({ code: "BAD_REQUEST", message: "Reorder must include exactly this page's blocks" });
     const validated = validateDraftBlockSet(input.blocks as BlockRow[]);

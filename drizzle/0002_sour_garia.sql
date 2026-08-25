@@ -1,2 +1,3 @@
 ALTER TABLE `pageBlocks` ADD CONSTRAINT `pageBlocks_parentBlockId_pageBlocks_id_fk` FOREIGN KEY (`parentBlockId`) REFERENCES `pageBlocks`(`id`) ON DELETE cascade ON UPDATE no action;
+--> statement-breakpoint
 CREATE INDEX `page_blocks_parent_idx` ON `pageBlocks` (`parentBlockId`);

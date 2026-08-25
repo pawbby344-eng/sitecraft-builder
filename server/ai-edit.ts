@@ -63,7 +63,7 @@ async function loadContext(ownerId: number, projectId: number): Promise<DraftCon
   const db = await requiredDb();
   const projectRows = await db.select({ id: projects.id, ownerId: projects.ownerId, projectDraftRevision: projects.projectDraftRevision, theme: projects.theme }).from(projects)
     .where(and(eq(projects.id, projectId), eq(projects.ownerId, ownerId))).limit(1);
-  const project = projectRows[0];
+  const project = projectRows[0] ? { ...projectRows[0], theme: parseJson(projectRows[0].theme) } : projectRows[0];
   if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
   const projectPages = await db.select({ id: pages.id, projectId: pages.projectId, name: pages.name, pageSlug: pages.pageSlug }).from(pages).where(eq(pages.projectId, projectId));
   const blocks = await db.select({ id: pageBlocks.id, pageId: pageBlocks.pageId, parentBlockId: pageBlocks.parentBlockId, type: pageBlocks.type, sortOrder: pageBlocks.sortOrder, props: pageBlocks.props }).from(pageBlocks)
