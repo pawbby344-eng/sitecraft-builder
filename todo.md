@@ -387,3 +387,15 @@
 - [x] Проверить mobile/desktop визуальное состояние, keyboard focus и отсутствие overflow после изменений
 - [x] Запустить `pnpm check`, `pnpm test`, browser E2E и `pnpm build`
 - [x] Исправить E2E selectors, зависящие от старых английских enum-текстов блоков после русификации
+
+
+## Comprehensive Project Audit
+
+- [x] Собрать карту production surface, scripts, tests, migrations и assets
+- [x] Провести статический аудит исходников и configuration
+- [x] Проверить dependency health, vulnerabilities и GitHub/open-source alternatives
+- [x] Повторно проверить security, schema, migrations, ownership, concurrency и server regressions
+- [x] Провести browser, responsive и accessibility audit на основных состояниях
+- [x] Выполнить clean `pnpm check`, `pnpm test`, browser E2E и `pnpm build`
+- [x] Подготовить итоговую таблицу PASS/FAIL, blockers, warnings и доказательства
+- [x] Добавить read-only browser audit для accessible names, alt-текстов, duplicate IDs, overflow и runtime console errors
