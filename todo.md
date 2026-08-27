@@ -399,3 +399,12 @@
 - [x] Выполнить clean `pnpm check`, `pnpm test`, browser E2E и `pnpm build`
 - [x] Подготовить итоговую таблицу PASS/FAIL, blockers, warnings и доказательства
 - [x] Добавить read-only browser audit для accessible names, alt-текстов, duplicate IDs, overflow и runtime console errors
+
+
+## Reusable Comprehensive Audit Skill
+
+- [x] Спроектировать переносимый workflow комплексного аудита веб-проектов
+- [x] Инициализировать skill и написать компактный SKILL.md
+- [x] Добавить reusable audit checklist/report template без project-specific secrets
+- [x] Валидировать skill через quick_validate.py
+- [x] Передать готовый skill пользователю
