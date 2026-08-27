@@ -17,16 +17,16 @@ export default function NotFound() {
           <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
             <Layers3 className="h-6 w-6" />
           </div>
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">SiteCraft workspace</p>
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Рабочая область SiteCraft</p>
 
           <h1 className="mb-2 text-4xl font-semibold tracking-[-0.04em] text-slate-950">404</h1>
 
           <h2 className="mb-4 text-xl font-semibold text-slate-700">
-            This page is not available
+            Эта страница недоступна
           </h2>
 
           <p className="mb-8 leading-relaxed text-slate-500">
-            The page may have been moved, deleted, or is not part of this workspace.
+            Страница могла быть перемещена, удалена или не относится к этой рабочей области.
           </p>
 
           <div
@@ -38,7 +38,7 @@ export default function NotFound() {
               className="min-h-11 rounded-xl bg-slate-950 px-6 text-white shadow-sm transition-colors hover:bg-slate-800"
             >
               <Home className="w-4 h-4 mr-2" />
-              Go Home
+              На главную
             </Button>
           </div>
         </CardContent>

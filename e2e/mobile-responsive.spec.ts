@@ -10,7 +10,7 @@ test.describe("SiteCraft mobile responsive workspace", () => {
     await page.getByTestId("mobile-pane-editor").waitFor();
     await page.waitForFunction(() => {
       const heading = document.querySelector("main h1");
-      return Boolean(heading && heading.textContent && heading.textContent !== "Loading project");
+      return Boolean(heading && heading.textContent && heading.textContent !== "Загрузка проекта");
     });
 
     const widthAtEditor = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
@@ -27,9 +27,9 @@ test.describe("SiteCraft mobile responsive workspace", () => {
       await expect(page.getByTestId("mobile-workspace-editor")).toBeVisible();
       await page.waitForFunction(() => {
         const heading = document.querySelector("main h1");
-        return Boolean(heading && heading.textContent && heading.textContent !== "Loading project");
+        return Boolean(heading && heading.textContent && heading.textContent !== "Загрузка проекта");
       });
-      const firstBlock = page.locator("main button").filter({ hasText: /heading|body|Image|Button/ }).first();
+      const firstBlock = page.locator("main button").filter({ hasText: /Заголовок|Основной текст|Изображение|Кнопка/ }).first();
       if (await firstBlock.count()) {
         await firstBlock.click();
         await expect(page.getByTestId("mobile-workspace-properties")).toBeVisible();

@@ -23,13 +23,14 @@ test.describe("SiteCraft final UI verification", () => {
   test("desktop workspace and mobile panes keep controls visible and contained", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText("SiteCraft").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Save draft" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Сохранить черновик" })).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
     await expect(page.getByTestId("mobile-pane-editor")).toBeVisible();
     await expect(page.getByTestId("mobile-workspace-editor")).toBeVisible();
+    await expect(page.getByTestId("editor-content-state")).toHaveAttribute("class", /animate-in/);
     await assertNoHorizontalOverflow(page);
     await assertVisibleTouchTargets(page);
 
@@ -42,7 +43,7 @@ test.describe("SiteCraft final UI verification", () => {
     await expect(populatedProject).toBeVisible();
     await populatedProject.click();
     await expect(page.getByTestId("mobile-workspace-editor")).toBeVisible();
-    const firstBlock = page.locator("main button").filter({ hasText: /heading|body/ }).first();
+    const firstBlock = page.locator('[data-testid^="canvas-block-"][data-block-type="text"]').first();
     await expect(firstBlock).toBeVisible();
     await firstBlock.click();
     await expect(page.getByTestId("mobile-workspace-properties")).toBeVisible();
@@ -52,8 +53,10 @@ test.describe("SiteCraft final UI verification", () => {
     await page.getByTestId("mobile-pane-properties").focus();
     await expect(page.getByTestId("mobile-pane-properties")).toBeFocused();
     await page.getByTestId("mobile-pane-properties").click();
-    await expect(page.getByText("AI Local Edit")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeVisible();
+    await expect(page.getByText("Локальное редактирование с AI")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Создать предложение AI" })).toHaveAttribute("title", /Создать предложение AI/);
+    await expect(page.getByRole("button", { name: /Заблокировать область|Разблокировать область/ })).toHaveAttribute("title", /област/);
+    await expect(page.getByRole("button", { name: "Опубликовать", exact: true })).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await assertVisibleTouchTargets(page);
   });
@@ -67,13 +70,13 @@ test.describe("SiteCraft final UI verification", () => {
 
     const missing = await page.goto("/site/sitecraft-ui-missing");
     expect(missing?.status()).toBe(404);
-    await expect(page.getByText("This site is not available")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Return to SiteCraft" })).toBeVisible();
+    await expect(page.getByText("Этот сайт недоступен")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Вернуться в SiteCraft" })).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     await page.goto("/404");
-    await expect(page.getByText("SiteCraft workspace")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Go Home" })).toBeVisible();
+    await expect(page.getByText("Рабочая область SiteCraft")).toBeVisible();
+    await expect(page.getByRole("button", { name: "На главную" })).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await assertVisibleTouchTargets(page);
   });

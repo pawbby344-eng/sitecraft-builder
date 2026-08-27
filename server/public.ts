@@ -5,11 +5,11 @@ import { logStructuredServerError } from "./_core/request-context";
 
 function renderPublicNotFound() {
   return `<!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Site unavailable · SiteCraft</title>
+    <title>Сайт недоступен · SiteCraft</title>
     <style>
       :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       * { box-sizing: border-box; }
@@ -27,10 +27,10 @@ function renderPublicNotFound() {
   <body>
     <main aria-labelledby="public-not-found-title">
       <div class="mark" aria-hidden="true">SC</div>
-      <p class="eyebrow">SiteCraft public site</p>
-      <h1 id="public-not-found-title">This site is not available</h1>
-      <p>The page may be unpublished, moved, or no longer exists.</p>
-      <a href="/">Return to SiteCraft</a>
+      <p class="eyebrow">Публичный сайт SiteCraft</p>
+      <h1 id="public-not-found-title">Этот сайт недоступен</h1>
+      <p>Страница могла быть снята с публикации, перемещена или больше не существует.</p>
+      <a href="/">Вернуться в SiteCraft</a>
     </main>
   </body>
 </html>`;

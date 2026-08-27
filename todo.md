@@ -377,3 +377,13 @@
 - [x] Повторно выполнить browser UI regression, pnpm check, pnpm test и pnpm build
 - [x] Подтверждённый UI gap: поднять mobile touch targets для pane tabs, form controls и action buttons до минимум 44px
 - [x] Подтверждённый UI gap: сделать public 404 response намеренно оформленным, сохранив HTTP 404 и snapshot-only semantics
+
+
+## Russian UI, Editor Transitions and Tooltips
+
+- [x] Перевести пользовательские labels, actions, statuses, errors и editor copy на русский язык
+- [x] Добавить плавные переходы между empty и populated состояниями editor без изменения данных и handlers
+- [x] Добавить информативные доступные tooltips для кнопок Properties и AI Local Edit
+- [x] Проверить mobile/desktop визуальное состояние, keyboard focus и отсутствие overflow после изменений
+- [x] Запустить `pnpm check`, `pnpm test`, browser E2E и `pnpm build`
+- [x] Исправить E2E selectors, зависящие от старых английских enum-текстов блоков после русификации

@@ -188,7 +188,7 @@ describe.sequential("Stage 6 Responsive Preview and Publish", () => {
     await expect(getPublicSnapshot({ projectSlug: (await c.publish.status({ projectId })).projectSlug })).rejects.toMatchObject({ code: "NOT_FOUND" });
     const unpublishedResponse = await fetch(`${publicBaseUrl}/site/${(await c.publish.status({ projectId })).projectSlug}`);
     expect(unpublishedResponse.status).toBe(404);
-    expect(await unpublishedResponse.text()).toContain("SiteCraft public site");
+    expect(await unpublishedResponse.text()).toContain("Публичный сайт SiteCraft");
     const republished = await c.publish.publish({ projectId, expectedRevision: before.project.projectDraftRevision });
     await db.update(publishedRevisions).set({ schemaVersion: "999" }).where(eq(publishedRevisions.id, republished.publishedRevisionId));
     await expect(getPublicSnapshot({ projectSlug: republished.projectSlug })).rejects.toMatchObject({ code: "NOT_FOUND" });
