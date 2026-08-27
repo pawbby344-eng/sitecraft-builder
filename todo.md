@@ -366,3 +366,14 @@
 - [x] Подтвердить mobile pane switching Projects → Editor → Properties через browser regression
 - [x] Добавить mobile responsive regression test для 390px и проверки отсутствия горизонтального overflow
 - [x] Запустить mobile E2E, pnpm check, pnpm test и обычный pnpm build
+
+
+## Final UI Verification
+
+- [x] Проверить основные production маршруты и состояния интерфейса на desktop и mobile
+- [x] Проверить populated и empty workspace, editor/properties, AI/locks, preview, publish и public route
+- [x] Проверить визуальные clipping/overflow, touch targets, keyboard focus и читаемость
+- [x] Исправить только подтверждённые UI-проблемы без изменения бизнес-логики
+- [x] Повторно выполнить browser UI regression, pnpm check, pnpm test и pnpm build
+- [x] Подтверждённый UI gap: поднять mobile touch targets для pane tabs, form controls и action buttons до минимум 44px
+- [x] Подтверждённый UI gap: сделать public 404 response намеренно оформленным, сохранив HTTP 404 и snapshot-only semantics

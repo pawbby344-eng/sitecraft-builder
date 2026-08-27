@@ -93,7 +93,7 @@ function SelectField({ value, onChange, options }: { value: string; onChange: (v
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+      className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
     >
       {options.map((option) => <option key={option} value={option}>{option}</option>)}
     </select>
@@ -289,7 +289,7 @@ export default function Workspace() {
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><span className={cn("h-2 w-2 rounded-full", dirty ? "bg-amber-400" : "bg-emerald-500")} />{dirty ? "Unsaved changes" : "All changes saved"}</div>
-          <div className="hidden items-center gap-2 md:flex"><Button onClick={() => setPreviewOpen((value) => !value)} variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-700">{previewOpen ? <PanelRight className="mr-2 h-4 w-4" /> : <Monitor className="mr-2 h-4 w-4" />}{previewOpen ? "Editor" : "Preview"}</Button>{publishStatusQuery.data?.isPublished ? <Badge className="rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">Published</Badge> : <Badge variant="secondary" className="rounded-full">Draft only</Badge>}</div><Button onClick={() => setPreviewOpen((value) => !value)} variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-700 md:hidden" aria-label={previewOpen ? "Open editor" : "Open preview"}>{previewOpen ? <PanelRight className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}</Button><Button onClick={save} disabled={!dirty || isSaving} className="h-10 rounded-xl bg-slate-950 px-4 text-sm text-white shadow-sm hover:bg-slate-800">
+          <div className="hidden items-center gap-2 md:flex"><Button onClick={() => setPreviewOpen((value) => !value)} variant="outline" className="h-10 rounded-xl border-slate-200 bg-white px-3 text-sm text-slate-700">{previewOpen ? <PanelRight className="mr-2 h-4 w-4" /> : <Monitor className="mr-2 h-4 w-4" />}{previewOpen ? "Editor" : "Preview"}</Button>{publishStatusQuery.data?.isPublished ? <Badge className="rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">Published</Badge> : <Badge variant="secondary" className="rounded-full">Draft only</Badge>}</div><Button onClick={() => setPreviewOpen((value) => !value)} variant="outline" className="h-11 w-11 min-w-11 rounded-xl border-slate-200 bg-white px-0 text-sm text-slate-700 md:hidden" aria-label={previewOpen ? "Open editor" : "Open preview"}>{previewOpen ? <PanelRight className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}</Button><Button onClick={save} disabled={!dirty || isSaving} className="h-10 rounded-xl bg-slate-950 px-4 text-sm text-white shadow-sm hover:bg-slate-800">
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save draft
           </Button>
@@ -297,12 +297,12 @@ export default function Workspace() {
       </header>
 
       <nav aria-label="Workspace sections" className="sticky top-0 z-20 grid grid-cols-3 gap-1 border-b border-slate-200 bg-white p-2 md:hidden">
-        {([['projects', 'Projects'], ['editor', 'Editor'], ['properties', 'Properties']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setMobilePane(value)} className={cn("min-h-10 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition", mobilePane === value ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900")} aria-current={mobilePane === value ? "page" : undefined} data-testid={`mobile-pane-${value}`}>{label}</button>)}
+        {([['projects', 'Projects'], ['editor', 'Editor'], ['properties', 'Properties']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setMobilePane(value)} className={cn("min-h-11 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition", mobilePane === value ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900")} aria-current={mobilePane === value ? "page" : undefined} data-testid={`mobile-pane-${value}`}>{label}</button>)}
       </nav>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[236px_minmax(0,1fr)_280px]">
         <aside data-testid="mobile-workspace-projects" className={cn("min-h-0 overflow-y-auto border-b border-slate-200 bg-white p-4 md:block md:border-b-0 md:border-r", isMobile && mobilePane !== "projects" && "hidden")}>
-          <div className="mb-6 flex items-center justify-between"><span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Projects</span><div className="flex items-center gap-2"><span className="text-xs text-slate-400">{projects.length}</span><button aria-label="Create new project" onClick={() => setBuilderOpen(true)} className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-950"><Plus className="h-3.5 w-3.5" /></button></div></div>
+          <div className="mb-6 flex items-center justify-between"><span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Projects</span><div className="flex items-center gap-2"><span className="text-xs text-slate-400">{projects.length}</span><button aria-label="Create new project" onClick={() => setBuilderOpen(true)} className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"><Plus className="h-3.5 w-3.5" /></button></div></div>
           <div className="space-y-1.5">
             {projects.map((project) => (
               <button key={project.id} onClick={() => { setSelectedProjectId(project.id); setDirty(false); setMobilePane("editor"); }} className={cn("group w-full rounded-xl border px-3 py-3 text-left transition", selectedProjectId === project.id ? "border-slate-300 bg-slate-950 text-white shadow-sm" : "border-transparent hover:border-slate-200 hover:bg-slate-50")}>
