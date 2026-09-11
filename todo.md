@@ -416,3 +416,10 @@
 - [ ] Создать или определить приватный GitHub repository для SiteCraft
 - [ ] Отправить актуальную ветку main в GitHub
 - [ ] Проверить remote, branch, commit и содержимое GitHub после push
+
+
+## GitHub Session Artifact Remediation
+
+- [ ] Удалить `.auth/manus-storage-state.json` из Git history репозитория web-creator
+- [ ] Добавить `.auth/` и E2E result artifacts в ignore rules
+- [ ] Force-push очищенную main и проверить GitHub tree/history
