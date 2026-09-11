@@ -408,3 +408,11 @@
 - [x] Добавить reusable audit checklist/report template без project-specific secrets
 - [x] Валидировать skill через quick_validate.py
 - [x] Передать готовый skill пользователю
+
+
+## GitHub Export
+
+- [ ] Проверить Git state, .gitignore и отсутствие tracked secrets перед выгрузкой
+- [ ] Создать или определить приватный GitHub repository для SiteCraft
+- [ ] Отправить актуальную ветку main в GitHub
+- [ ] Проверить remote, branch, commit и содержимое GitHub после push
